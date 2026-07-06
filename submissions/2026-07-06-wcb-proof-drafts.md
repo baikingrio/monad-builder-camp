@@ -60,18 +60,41 @@ https://github.com/baikingrio/monad-builder-camp/blob/main/experiments/monad-pla
 
 CampToken 是一个简化版 ERC20，包含 name、symbol、decimals、totalSupply、balanceOf、allowance、transfer、approve 和 transferFrom 等基础能力。初始供应量是 1,000,000 CAMP。
 
-这次练习中，我重点不是让 AI 直接替我完成开发，而是把 AI 作为辅助工具，用来帮助生成基础结构、解释 ERC20 的核心字段和函数，再由我人工检查关键点。人工检查包括：
+我使用的 Prompt：
 
-1. transfer 是否检查余额不足；
-2. transfer 是否禁止转到零地址；
-3. transferFrom 是否检查并扣减 allowance；
-4. _mint 是否更新 totalSupply 和接收方余额；
-5. Transfer / Approval 事件是否正确触发。
+请帮我生成一个最小 ERC20 风格的 Solidity 合约，用于 Monad Builder Camp Week 1 练习，包含 name、symbol、decimals、totalSupply、balanceOf、transfer、approve、transferFrom，并补充 Foundry 测试。
 
-我还补充了 Foundry 测试，覆盖 metadata、transfer、approve + transferFrom 三条基础路径。
+AI 生成的主要输出包括：
+
+1. 一个最小 ERC20 风格合约结构；
+2. name、symbol、decimals、totalSupply、balanceOf、allowance 等基础状态变量；
+3. transfer、approve、transferFrom、_mint 等核心函数；
+4. Transfer / Approval 事件；
+5. Foundry 测试思路，包括 metadata、transfer、approve + transferFrom。
+
+这次练习中，我重点不是让 AI 直接替我完成开发，而是把 AI 作为辅助工具，用来帮助生成基础结构、解释 ERC20 的核心字段和函数，再由我人工检查关键点。
+
+我做过的人工修改或判断包括：
+
+1. 把合约控制在最小 ERC20 风格，没有引入不必要的复杂权限逻辑；
+2. 人工检查 `transfer` 是否检查余额不足；
+3. 人工检查 `transfer` 是否禁止转到零地址；
+4. 人工检查 `transferFrom` 是否检查并扣减 allowance；
+5. 人工检查 `_mint` 是否同时更新 totalSupply 和接收方余额；
+6. 人工检查 Transfer / Approval 事件是否正确触发；
+7. 补充并运行 Foundry 测试，确认基础行为符合预期。
 
 测试文件：
 https://github.com/baikingrio/monad-builder-camp/blob/main/experiments/monad-playground/test/CampToken.t.sol
+
+本地测试结果：
+
+```text
+forge test -vvv
+3 tests passed, 0 failed, 0 skipped
+```
+
+通过的测试包括：`test_Metadata()`、`test_Transfer()`、`test_ApproveAndTransferFrom()`。
 ```
 
 ## WCB 任务 Proof 草稿 3：Week 1｜智能合约实践｜部署你的第一个 Monad 合约
