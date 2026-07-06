@@ -30,14 +30,70 @@ Quinn 当前更适合以 **Tech Track 为主，Research / Product 为辅**：
 README.md                 # 学习空间说明
 profile.md                # 学习者背景与目标
 learning-plan.md          # 训练营学习计划
+.agents/skills/           # Monad Agent Skills（monskills）
+skills-lock.json          # Skills 安装锁定文件
 daily/                    # 每日学习笔记与残酷共学打卡
 notes/                    # 主题笔记 / 课程整理
+notes/monad/              # Monad 官方 llms-full 文档快照
 experiments/              # 小实验、链上交互、代码验证
 projects/                 # Monad 项目原型与项目文档
 submissions/              # 提交材料草稿与记录
 portfolio/                # 作品集、简历 bullet、展示材料
 templates/                # 笔记模板
+COMMIT_CONVENTION.md      # Git commit 规范
 ```
+
+## Git Commit 规范
+
+提交信息格式见 [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md)。简要格式：
+
+```text
+<type>(<scope>): <subject>
+```
+
+常见 type：`daily`、`notes`、`exp`、`project`、`docs`、`chore`。链上地址与 tx hash 写在 commit body，不要写进 subject。
+
+## Monad Agent Skills
+
+本仓库安装了 [monskills](https://github.com/therealharpaljadeja/monskills)，供 Cursor 等 AI Agent 在 Monad 开发时引用最新链上知识（合约、钱包、Gas、索引等）。
+
+### 安装
+
+```shell
+npx skills add therealharpaljadeja/monskills -y
+```
+
+安装后文件位于 `.agents/skills/monskill/`，版本锁定在 `skills-lock.json`。
+
+### 更新
+
+检查是否有新版本：
+
+```shell
+npx skills check
+```
+
+更新全部已安装的 skills：
+
+```shell
+npx skills update
+```
+
+更新完成后，将 `.agents/` 与 `skills-lock.json` 的变更一并提交，便于同步到其他环境。
+
+## Monad 官方文档（LLM）
+
+官方文档 LLM 导出位于 `notes/monad/llms-full.txt`（来源：https://docs.monad.xyz/llms-full.txt），与 monskills 配合使用：skills 负责开发流程路由，llms-full 提供完整官方文档正文。
+
+Cursor 已在 `.cursor/rules/monad-docs.mdc` 中配置：在 `experiments/`、`projects/` 下工作时，Agent 会检索该文件而非依赖过时知识。
+
+### 更新文档快照
+
+```shell
+curl -fsSL -o notes/monad/llms-full.txt https://docs.monad.xyz/llms-full.txt
+```
+
+更新后提交 `notes/monad/llms-full.txt` 即可。
 
 ## 公开与隐私边界
 

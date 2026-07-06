@@ -1,0 +1,17 @@
+---
+description: Monad 开发时引用官方 llms-full 文档与 monskills
+globs: experiments/**/*,projects/**/*
+alwaysApply: false
+---
+
+# Monad 文档与 Skills
+
+涉及 Monad 链上开发、部署、Gas、RPC、地址、工具链时：
+
+1. **先读** `.agents/skills/monskill/SKILL.md`，按任务类型选择对应 monskill 子技能
+2. **再查** `notes/monad/llms-full.txt`（来源：https://docs.monad.xyz/llms-full.txt）
+   - 用 `grep` / 语义搜索定位章节，不要一次性加载全文
+   - 优先以该文件为准，勿依赖过时的训练数据
+3. **禁止臆造** chain ID、RPC URL、合约地址、Gas 规则等；文档与 monskill 中找不到时再说明不确定
+
+常见检索关键词：`testnet`、`chain_id`、`gas`、`verify`、`faucet`、`Multicall3`、`RPC`

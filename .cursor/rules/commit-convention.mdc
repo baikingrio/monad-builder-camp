@@ -1,0 +1,20 @@
+---
+description: 本仓库 Git commit message 格式规范
+alwaysApply: false
+---
+
+# Git Commit 规范
+
+创建 commit 前阅读 `COMMIT_CONVENTION.md`，并严格遵循：
+
+```text
+<type>(<scope>): <subject>
+```
+
+**Type**：`daily` | `notes` | `exp` | `project` | `portfolio` | `submission` | `docs` | `chore` | `fix`
+
+**Subject**：中文、祈使句、≤ 50 字、无句末句号
+
+链上地址、tx hash、验证结果放 **body**，不要放进 subject。一次 commit 只做一件事，message 中不包含任何密钥。
+
+示例：`exp(monad-playground): 部署 CampToken 到 Monad Testnet`
