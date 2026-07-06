@@ -141,6 +141,16 @@ forge verify-contract \
 | Explorer | [MonadVision](https://testnet.monadvision.com/address/0xef694e5411A70d05270722A38Ea9Ef242E3afcf2) |
 | 源码验证 | `exact_match`（Sourcify） |
 
+## 已交互（Testnet）
+
+| 项目 | 值 |
+|------|-----|
+| Write function | `transfer(address,uint256)` |
+| 接收地址 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` |
+| 数量 | `1 CAMP`（`1000000000000000000`） |
+| 交互交易 | `0xd496aae977b07d590ceeb512f871708061ca12ca2e91bc6c1da0ac6a1c9704b0` |
+| Explorer | [MonadVision](https://testnet.monadvision.com/tx/0xd496aae977b07d590ceeb512f871708061ca12ca2e91bc6c1da0ac6a1c9704b0) |
+
 ## 参考
 
 - [Foundry Book](https://book.getfoundry.sh/)

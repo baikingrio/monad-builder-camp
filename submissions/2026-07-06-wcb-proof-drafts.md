@@ -90,11 +90,23 @@ https://github.com/baikingrio/monad-builder-camp/tree/main/experiments/monad-pla
 部署交易：
 0x59d72a3596bc405f024b01a31a257a8ab2eed6dcb652473af924f312c53a5ff2
 
+合约交互交易：
+0xd496aae977b07d590ceeb512f871708061ca12ca2e91bc6c1da0ac6a1c9704b0
+
+交互内容：
+在 MonadVision 的 Write Contract 页面调用 `transfer(address,uint256)`，向 `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` 转出 `1 CAMP`，amount 为 `1000000000000000000`。
+
+交互截图：
+https://github.com/baikingrio/monad-builder-camp/blob/main/submissions/assets/2026-07-06-camptoken-transfer-monadvision.jpg
+
 MonadVision：
 https://testnet.monadvision.com/address/0xef694e5411A70d05270722A38Ea9Ef242E3afcf2
 
 源码验证状态：
 exact_match（Sourcify / MonadVision）
+
+链上验证补充：
+我用 `cast` 核对了合约 read function 和交互结果：`name()` 返回 `Camp Token`，`symbol()` 返回 `CAMP`，交易 receipt status 为 `true`，交易目标合约地址为 `0xef694e5411A70d05270722A38Ea9Ef242E3afcf2`。
 
 这次部署使用 Foundry 完成，部署脚本在：
 https://github.com/baikingrio/monad-builder-camp/blob/main/experiments/monad-playground/script/DeployCampToken.s.sol
