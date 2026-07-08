@@ -151,8 +151,47 @@ forge verify-contract \
 | 交互交易 | `0xd496aae977b07d590ceeb512f871708061ca12ca2e91bc6c1da0ac6a1c9704b0` |
 | Explorer | [MonadVision](https://testnet.monadvision.com/tx/0xd496aae977b07d590ceeb512f871708061ca12ca2e91bc6c1da0ac6a1c9704b0) |
 
+## ERC-4337 最小实践（Testnet）
+
+本实验补充了一个最小 ERC-4337 v0.7 风格账户 `Minimal4337Account`，用于理解 Account Abstraction 的基本链上流程。它不是生产级账户，只用于 Monad Builder Camp 学习：
+
+1. 部署一个最小智能账户，保存 `owner` 和 `entryPoint`。
+2. 由 `owner` 签名一个 `PackedUserOperation`。
+3. 调用 Monad Testnet 上已有的 EntryPoint v0.7 `handleOps`。
+4. EntryPoint 回调账户的 `validateUserOp` 验签。
+5. 验签通过后，EntryPoint 通过账户执行 `execute`。
+
+| 项目 | 值 |
+|------|-----|
+| EntryPoint v0.7 | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
+| Minimal4337Account | `0x672924dE597793C9f19e537c0B428A880eE89c2e` |
+| 部署交易 | `0xa709a593f84aba8b3905f37e84ded3031d19ef7e043782d583cef17bc9cfee8e` |
+| handleOps 交易 | `0xb8912d3183b135507c59135cffe3daf46639ce452c0074abb7d0552efb889a46` |
+| UserOpHash | `0x1635d2ad89aa79cca42d7839739e0359b7cb85541fa5bd7d9e2d235555726eae` |
+| EntryPoint nonce | `1` |
+| 验证结果 | `deploy status = true`，`handleOps status = true` |
+
+Explorer：
+
+- Account: https://testnet.monadvision.com/address/0x672924dE597793C9f19e537c0B428A880eE89c2e
+- handleOps tx: https://testnet.monadvision.com/tx/0xb8912d3183b135507c59135cffe3daf46639ce452c0074abb7d0552efb889a46
+
+运行方式：
+
+```shell
+export PRIVATE_KEY=<测试网临时钱包私钥>
+forge script script/Minimal4337Practice.s.sol:Minimal4337Practice \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --broadcast \
+  --legacy \
+  -vv
+```
+
+注意：只使用测试网临时钱包，不要把私钥、助记词、`.env` 或 broadcast cache 中的敏感信息提交到仓库。
+
 ## 参考
 
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Monad Foundry 部署指南](https://docs.monad.xyz/guides/deploy-smart-contract/foundry)
 - [Monad Foundry 源码验证指南](https://docs.monad.xyz/guides/verify-smart-contract/foundry)
+- [ERC-4337 Docs](https://docs.erc4337.io/)
