@@ -176,18 +176,48 @@ Explorer：
 - Account: https://testnet.monadvision.com/address/0x672924dE597793C9f19e537c0B428A880eE89c2e
 - handleOps tx: https://testnet.monadvision.com/tx/0xb8912d3183b135507c59135cffe3daf46639ce452c0074abb7d0552efb889a46
 
+### v0.8 迁移记录
+
+第一步迁移先保持账户合约和 UserOperation 构造方式不变，只把脚本切到 Monad Testnet 官方 EntryPoint v0.8，用课程专用账户完成一次真实 `handleOps`。
+
+| 项目 | 值 |
+|------|-----|
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` |
+| Minimal4337AccountV08 | `0xff76634Ea6D1407266a0fc6096f042416F258E24` |
+| Owner / 课程账户 | `0x7c0343c808B827e4286381c2292d92c3f19152a4` |
+| 部署交易 | `0x9d11f70e00619503e0f1aaa13dd7f8cf7a097099ba95a71a21df9fd7817dc539` |
+| handleOps 交易 | `0xa7d556f9d4e30119b654a7c248281916bac433413e99b4ebeecdebdef374c34d` |
+| UserOpHash | `0xf29daf942acc744a63dcb17a772e77524ff78ad0b10190cf168f086d7ec72864` |
+| EntryPoint nonce | `1` |
+| 账户代码大小 | `2952 bytes` |
+| 账户余额 | `0.129 MON` |
+| 验证结果 | `deploy status = true`，`handleOps status = true` |
+
+Explorer：
+
+- Account: https://testnet.monadvision.com/address/0xff76634Ea6D1407266a0fc6096f042416F258E24
+- deploy tx: https://testnet.monadvision.com/tx/0x9d11f70e00619503e0f1aaa13dd7f8cf7a097099ba95a71a21df9fd7817dc539
+- handleOps tx: https://testnet.monadvision.com/tx/0xa7d556f9d4e30119b654a7c248281916bac433413e99b4ebeecdebdef374c34d
+
 运行方式：
 
 ```shell
-export PRIVATE_KEY=<测试网临时钱包私钥>
+export PRIVATE_KEY=<课程专用测试网钱包私钥>
 forge script script/Minimal4337Practice.s.sol:Minimal4337Practice \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --broadcast \
+  --legacy \
+  -vv
+
+# v0.8 迁移脚本
+forge script script/Minimal4337PracticeV08.s.sol:Minimal4337PracticeV08 \
   --rpc-url https://testnet-rpc.monad.xyz \
   --broadcast \
   --legacy \
   -vv
 ```
 
-注意：只使用测试网临时钱包，不要把私钥、助记词、`.env` 或 broadcast cache 中的敏感信息提交到仓库。
+注意：只使用课程专用测试网钱包，不要把私钥、助记词、`.env` 或 broadcast cache 中的敏感信息提交到仓库。
 
 ## 参考
 
