@@ -97,6 +97,7 @@ contract MinimalSessionKeyAccount {
         return 1;
     }
 
+    /// @dev 若账户在 EntryPoint 中的押金不足，从账户余额向 EntryPoint 转账补足
     function _payPrefund(uint256 missingAccountFunds) internal {
         if (missingAccountFunds > 0) {
             (bool ok,) = payable(msg.sender).call{value: missingAccountFunds}("");
@@ -104,6 +105,7 @@ contract MinimalSessionKeyAccount {
         }
     }
 
+    /// @dev 校验 sessionKey 签名的 UserOp 是否落在授权范围内：未过期、目标合约、函数 selector、原生币额度
     function _isAllowedSessionUserOp(PackedUserOperation calldata userOp) internal view returns (bool) {
         if (block.timestamp > validUntil) return false;
 
@@ -120,6 +122,7 @@ contract MinimalSessionKeyAccount {
         return true;
     }
 
+    /// @dev 尝试将 callData 解析为 execute(target, value, data)；非 execute 调用则 decoded = false
     function _tryDecodeExecuteCall(bytes calldata callData)
         internal
         pure
@@ -137,10 +140,12 @@ contract MinimalSessionKeyAccount {
         return (true, target, value, data);
     }
 
+    /// @dev 在已确认 callData 为 execute 时，直接解码出目标地址、转账金额和内层 calldata
     function _decodeExecuteCall(bytes calldata callData) internal pure returns (address target, uint256 value, bytes memory data) {
         (, target, value, data) = _tryDecodeExecuteCall(callData);
     }
 
+    /// @dev 从 bytes calldata 的前 4 字节提取函数 selector（内层调用的函数签名）
     function _selectorOf(bytes memory data) internal pure returns (bytes4 selector) {
         if (data.length < 4) return bytes4(0);
         assembly {
@@ -148,6 +153,7 @@ contract MinimalSessionKeyAccount {
         }
     }
 
+    /// @dev 用 ecrecover 验证签名是否由 expectedSigner 对 digest 签署（65 字节 r|s|v）
     function _isValidSignature(bytes32 digest, bytes calldata signature, address expectedSigner) internal pure returns (bool) {
         if (signature.length != 65) return false;
 
