@@ -296,6 +296,58 @@ Explorer：
 - Deposit tx: https://testnet.monadvision.com/tx/0xdf042dd9ce34170b55e4d29ed259ecf82692dd3962570dc5eeeee721ae5f4a4b
 - sponsored handleOps tx: https://testnet.monadvision.com/tx/0x44b2c02374367f43ab006be28b524ba32c3a75d9b65b4c34ea3811eeaef86b4d
 
+### 第五步：session key / 受限权限实验
+
+这一步补充 `MinimalSessionKeyAccount`、`SessionKeyDemoTarget` 和 `SessionKeyPracticeV08`，用一个临时 session key 跑通“不是 owner 全权限签名，但可以在限定范围内执行低风险操作”的流程。
+
+简单应用场景可以这样理解：
+
+> 一个链游或活动 App 不希望用户每次签到、移动、领取小积分都弹钱包签名。用户可以先授权一个临时 session key：它只能调用指定活动合约的 `checkIn(string)`，有效期只有一天，不能转账到任意地址，也不能调用其他函数。之后前端可以用这个 session key 替用户签低风险 UserOperation；即使 session key 泄露，攻击者也只能在限制范围内操作，拿不到 owner 的完整控制权。
+
+这能帮助理解三个点：
+
+1. **session key 不是新 owner**：owner 仍然保留全权限，session key 只是临时、受限授权。
+2. **权限要在账户验证逻辑里检查**：本实验在 `validateUserOp` 中解析 `execute(target,value,data)`，检查目标合约、函数 selector、有效期和额度。
+3. **适合高频低风险交互**：比如签到、链游动作、积分任务、自动化低额操作；不适合无限制转账或管理权限。
+
+本次实际链上流程：
+
+1. 部署 `SessionKeyDemoTarget`，模拟“活动签到 / 游戏每日动作”。
+2. 部署 `MinimalSessionKeyAccount`，设置 owner、sessionKey、allowedTarget、allowedSelector、validUntil 和 nativeSpendLimit。
+3. 构造 UserOperation，callData 是账户 `execute(target, 0, checkIn("session-key-demo"))`。
+4. 用 session key 签名 UserOperation，而不是 owner key。
+5. EntryPoint 调用账户 `validateUserOp`，账户验证 session key 签名，并检查只能调用指定 target + selector。
+6. 验证通过后执行 `checkIn`，目标合约记录智能账户签到次数为 `1`。
+
+| 项目 | 值 |
+|------|-----|
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` |
+| SessionKeyAccount | `0xc01c4864631f8A23cBc2f59B8F1c3Eaa48dA4AD3` |
+| SessionTarget | `0xF13D07F366E1DFdFaBA6D8c1Eca0A43fC7Ac5c79` |
+| Owner / 课程账户 | `0x7c0343c808B827e4286381c2292d92c3f19152a4` |
+| SessionKey | `0xD1F63b1CDf3ebcF8D7AFEb95a4618c8B9a3049FF` |
+| allowedSelector | `0xf21bb4c5`（`checkIn(string)`） |
+| nativeSpendLimit | `0` |
+| Target 部署交易 | `0xe6fc9d5493c145d5eb4f05e7ac0a725a9a4849a5d4215a5fdc90c8b4aa8c944d` |
+| Account 部署交易 | `0x8775ef8bf00937d77112533b9801aab484f35448b3923be4c3fe01f48344f88f` |
+| session key handleOps 交易 | `0x1b40ca3f39e74b859d917bd927d3efee7c12484a54ce5610c6a9ec41d9bc224d` |
+| UserOpHash | `0x570f483b9e14d8435d8218efc8687162b358ffdd56748990e106da926d5ac8e5` |
+| handleOps 后 EntryPoint nonce | `1` |
+| checkInCount | `1` |
+| nativeSpent | `0` |
+| Account 代码大小 | `5196 bytes` |
+| Target 代码大小 | `2183 bytes` |
+| Account 余额 | `0.032 MON` |
+| 验证结果 | `target deploy status = true`，`account deploy status = true`，`handleOps status = true` |
+
+Explorer：
+
+- Session account: https://testnet.monadvision.com/address/0xc01c4864631f8A23cBc2f59B8F1c3Eaa48dA4AD3
+- Session target: https://testnet.monadvision.com/address/0xF13D07F366E1DFdFaBA6D8c1Eca0A43fC7Ac5c79
+- Target deploy tx: https://testnet.monadvision.com/tx/0xe6fc9d5493c145d5eb4f05e7ac0a725a9a4849a5d4215a5fdc90c8b4aa8c944d
+- Account deploy tx: https://testnet.monadvision.com/tx/0x8775ef8bf00937d77112533b9801aab484f35448b3923be4c3fe01f48344f88f
+- session key handleOps tx: https://testnet.monadvision.com/tx/0x1b40ca3f39e74b859d917bd927d3efee7c12484a54ce5610c6a9ec41d9bc224d
+
 运行方式：
 
 ```shell
@@ -322,6 +374,13 @@ forge script script/Counterfactual4337PracticeV08.s.sol:Counterfactual4337Practi
 
 # v0.8 paymaster / sponsored UserOp 脚本
 forge script script/SponsoredUserOpPracticeV08.s.sol:SponsoredUserOpPracticeV08 \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --broadcast \
+  --legacy \
+  -vv
+
+# v0.8 session key / 受限权限脚本
+forge script script/SessionKeyPracticeV08.s.sol:SessionKeyPracticeV08 \
   --rpc-url https://testnet-rpc.monad.xyz \
   --broadcast \
   --legacy \
