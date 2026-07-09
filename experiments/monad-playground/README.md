@@ -245,6 +245,57 @@ Explorer：
 - Prefund tx: https://testnet.monadvision.com/tx/0x337feab15f4060654428c8f601e9c762fc5896a6ed071b85334fc9d86298443e
 - handleOps tx: https://testnet.monadvision.com/tx/0x07e26e0a94d9a48f7233e67d07fcd8f1f5f2b18edeadfd2fdd9bbf91bbebf380
 
+### 第四步：paymaster / sponsored UserOp 概念验证
+
+这一步补充 `SimpleSponsoredPaymaster` 和 `SponsoredUserOpPracticeV08`，用一个极简 Paymaster 跑通“项目方替用户智能账户支付 UserOperation gas”的流程。
+
+简单应用场景可以这样理解：
+
+> 一个链上活动 App 想让新用户第一次签到/领取徽章时不用先准备 MON 付 gas。项目方部署 Paymaster，并提前往 EntryPoint 的 Paymaster deposit 里充值一笔 gas 预算。用户仍然用自己的 owner key 签名授权这次 UserOperation，但 `paymasterAndData` 指向活动方 Paymaster。EntryPoint 验证账户签名后，再调用 Paymaster 判断是否愿意赞助；验证通过后，这次 UserOp 的 gas 从 Paymaster deposit 扣，而不是从用户智能账户扣。
+
+这能帮助理解三个点：
+
+1. **Paymaster 不替用户授权**：用户仍然要签名 UserOperation，Paymaster 只决定是否赞助 gas。
+2. **sponsored UserOp 的费用来源不同**：gas 由 Paymaster 在 EntryPoint 里的 deposit 支付，账户余额主要用于自己的业务动作。
+3. **paymasterAndData 是赞助凭证入口**：v0.8 中至少包含 Paymaster 地址、paymaster verification gas limit、postOp gas limit；后面可以附加活动 ID、限额凭证或后端签名。
+
+本次实际链上流程：
+
+1. 部署一个新的 `Minimal4337Account`，只放入 `0.05 MON` 用于业务转账。
+2. 部署 `SimpleSponsoredPaymaster`，并设置只赞助这个账户。
+3. 由 owner 调用 `depositToEntryPoint`，给 Paymaster 在 EntryPoint 里的 deposit 充值 `0.3 MON`。
+4. 构造带 `paymasterAndData` 的 UserOperation。
+5. EntryPoint 先调用账户 `validateUserOp` 验签，再调用 Paymaster `validatePaymasterUserOp` 判断是否赞助。
+6. 验证通过后执行账户 `execute`，账户给 owner 转回 `0.001 MON`；UserOp gas 从 Paymaster deposit 扣除。
+
+| 项目 | 值 |
+|------|-----|
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` |
+| SponsoredAccount | `0xB63ddC901392a182eD0eBc10c81fC5B2952936DD` |
+| SimpleSponsoredPaymaster | `0x0DF510267FE287e0bf7724F28AFA07Ed755B1c96` |
+| Owner / 课程账户 | `0x7c0343c808B827e4286381c2292d92c3f19152a4` |
+| Account 部署交易 | `0xbf7b45371793ace45e083309adb93887a40eb0992f914cc59144268444347147` |
+| Paymaster 部署交易 | `0x5633400aa0ea2266ec2d237c67a06cd970e8604cf875214ddbf9108081dac74c` |
+| Paymaster deposit 交易 | `0xdf042dd9ce34170b55e4d29ed259ecf82692dd3962570dc5eeeee721ae5f4a4b` |
+| sponsored handleOps 交易 | `0x44b2c02374367f43ab006be28b524ba32c3a75d9b65b4c34ea3811eeaef86b4d` |
+| UserOpHash | `0x748239494916f5ea741987154e03e9d6ca30bb86b9d38e5d944895a64ac8d9d4` |
+| paymasterAndData 长度 | `83 bytes` |
+| handleOps 后 EntryPoint nonce | `1` |
+| 账户代码大小 | `2952 bytes` |
+| Paymaster 代码大小 | `3271 bytes` |
+| 账户余额 | `0.049 MON` |
+| Paymaster deposit 余额 | `0.2776184 MON` |
+| 验证结果 | `account deploy status = true`，`paymaster deploy status = true`，`deposit status = true`，`handleOps status = true` |
+
+Explorer：
+
+- Sponsored account: https://testnet.monadvision.com/address/0xB63ddC901392a182eD0eBc10c81fC5B2952936DD
+- Paymaster: https://testnet.monadvision.com/address/0x0DF510267FE287e0bf7724F28AFA07Ed755B1c96
+- Account deploy tx: https://testnet.monadvision.com/tx/0xbf7b45371793ace45e083309adb93887a40eb0992f914cc59144268444347147
+- Paymaster deploy tx: https://testnet.monadvision.com/tx/0x5633400aa0ea2266ec2d237c67a06cd970e8604cf875214ddbf9108081dac74c
+- Deposit tx: https://testnet.monadvision.com/tx/0xdf042dd9ce34170b55e4d29ed259ecf82692dd3962570dc5eeeee721ae5f4a4b
+- sponsored handleOps tx: https://testnet.monadvision.com/tx/0x44b2c02374367f43ab006be28b524ba32c3a75d9b65b4c34ea3811eeaef86b4d
+
 运行方式：
 
 ```shell
@@ -264,6 +315,13 @@ forge script script/Minimal4337PracticeV08.s.sol:Minimal4337PracticeV08 \
 
 # v0.8 counterfactual deployment / initCode 脚本
 forge script script/Counterfactual4337PracticeV08.s.sol:Counterfactual4337PracticeV08 \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --broadcast \
+  --legacy \
+  -vv
+
+# v0.8 paymaster / sponsored UserOp 脚本
+forge script script/SponsoredUserOpPracticeV08.s.sol:SponsoredUserOpPracticeV08 \
   --rpc-url https://testnet-rpc.monad.xyz \
   --broadcast \
   --legacy \
