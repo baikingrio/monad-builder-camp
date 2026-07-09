@@ -199,6 +199,52 @@ Explorer：
 - deploy tx: https://testnet.monadvision.com/tx/0x9d11f70e00619503e0f1aaa13dd7f8cf7a097099ba95a71a21df9fd7817dc539
 - handleOps tx: https://testnet.monadvision.com/tx/0xa7d556f9d4e30119b654a7c248281916bac433413e99b4ebeecdebdef374c34d
 
+### 第三步：counterfactual deployment / initCode 实验
+
+这一步补充 `Minimal4337AccountFactory` 和 `Counterfactual4337PracticeV08`，用 `CREATE2 + initCode` 跑通“还没部署账户，但已经知道账户地址”的 ERC-4337 流程。
+
+简单应用场景可以这样理解：
+
+> 一个新用户第一次打开链上活动 App。App 可以先根据用户 EOA、EntryPoint 和 salt 算出他的智能账户地址，把这个地址展示给后端、空投系统或朋友转账。这个时候账户合约还没有部署，链上 `code.length = 0`，但这个地址已经可以先收测试币/资产。等用户第一次真正点击“领取徽章/签到/转账”时，UserOperation 带上 `initCode`，EntryPoint 会先通过 factory 部署账户，再立刻执行这次操作。
+
+这能解决两个学习点：
+
+1. **counterfactual deployment**：账户地址可以在部署前确定，前端/后端可以提前把它当作用户的钱包地址使用。
+2. **initCode**：第一次 UserOperation 里携带“用哪个 factory、用什么参数创建账户”的数据，所以 Bundler/EntryPoint 可以在同一笔 `handleOps` 里完成“部署账户 + 执行操作”。
+
+本次实际链上流程：
+
+1. 部署 `Minimal4337AccountFactory`。
+2. 通过 `factory.getAddress(entryPoint, owner, salt)` 预测智能账户地址。
+3. 在账户尚未部署、`code.length = 0` 时，先向预测地址转入 `0.2 MON`。
+4. 构造 `initCode = factory address + createAccount(entryPoint, owner, salt)`。
+5. 发送 UserOperation，`sender` 填预测地址，`initCode` 负责首次部署账户。
+6. EntryPoint 执行 `handleOps` 后，账户代码出现，nonce 从 `0` 增加到 `1`，并通过账户 `execute` 给 owner 转回 `0.001 MON`。
+
+| 项目 | 值 |
+|------|-----|
+| EntryPoint v0.8 | `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108` |
+| Factory | `0xfa8018f91f6da368f210ac391364c4395ae4d084` |
+| CounterfactualAccount | `0x225b0Ab837621F548a86FE7B8D65a4A60079760B` |
+| Owner / 课程账户 | `0x7c0343c808B827e4286381c2292d92c3f19152a4` |
+| Factory 部署交易 | `0xd374005afdc8e06d73900cff15efe35c3aef6bc0bf3d016f48d8de7eaedfb35d` |
+| 预充值交易 | `0x337feab15f4060654428c8f601e9c762fc5896a6ed071b85334fc9d86298443e` |
+| handleOps 交易 | `0x07e26e0a94d9a48f7233e67d07fcd8f1f5f2b18edeadfd2fdd9bbf91bbebf380` |
+| UserOpHash | `0xe55b262a7b6443b459ddb5374cd0962f0ac9c63bca96beb5ae1942fdd952f31f` |
+| initCode 长度 | `120 bytes` |
+| handleOps 后 EntryPoint nonce | `1` |
+| 账户代码大小 | `2952 bytes` |
+| 账户余额 | `0.083 MON` |
+| 验证结果 | `factory deploy status = true`，`prefund status = true`，`handleOps status = true` |
+
+Explorer：
+
+- Factory: https://testnet.monadvision.com/address/0xfa8018f91f6da368f210ac391364c4395ae4d084
+- Counterfactual account: https://testnet.monadvision.com/address/0x225b0Ab837621F548a86FE7B8D65a4A60079760B
+- Factory deploy tx: https://testnet.monadvision.com/tx/0xd374005afdc8e06d73900cff15efe35c3aef6bc0bf3d016f48d8de7eaedfb35d
+- Prefund tx: https://testnet.monadvision.com/tx/0x337feab15f4060654428c8f601e9c762fc5896a6ed071b85334fc9d86298443e
+- handleOps tx: https://testnet.monadvision.com/tx/0x07e26e0a94d9a48f7233e67d07fcd8f1f5f2b18edeadfd2fdd9bbf91bbebf380
+
 运行方式：
 
 ```shell
@@ -211,6 +257,13 @@ forge script script/Minimal4337Practice.s.sol:Minimal4337Practice \
 
 # v0.8 迁移脚本
 forge script script/Minimal4337PracticeV08.s.sol:Minimal4337PracticeV08 \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  --broadcast \
+  --legacy \
+  -vv
+
+# v0.8 counterfactual deployment / initCode 脚本
+forge script script/Counterfactual4337PracticeV08.s.sol:Counterfactual4337PracticeV08 \
   --rpc-url https://testnet-rpc.monad.xyz \
   --broadcast \
   --legacy \
