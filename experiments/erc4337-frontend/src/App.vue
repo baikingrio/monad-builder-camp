@@ -3,6 +3,7 @@ import { connect, disconnect, getAccount, getBalance, switchChain } from '@wagmi
 import { formatUnits } from 'viem'
 import { computed, onMounted, ref } from 'vue'
 import { config } from './lib/wagmi'
+import { advanceSimulation, createSimulationState, getScenario } from './lib/simulation'
 import {
   ENTRY_POINT_V08,
   experiments,
@@ -17,6 +18,10 @@ const balance = ref<string | null>(null)
 const isBusy = ref(false)
 const walletError = ref<string | null>(null)
 const selectedExperiment = ref<Experiment>(experiments[0])
+const simulationState = ref(createSimulationState(selectedExperiment.value.id))
+
+const selectedScenario = computed(() => getScenario(selectedExperiment.value.id))
+const nextSimulationStep = computed(() => selectedScenario.value.steps[simulationState.value.currentStep])
 
 const shortAddress = computed(() => {
   if (!account.value) return ''
@@ -53,6 +58,19 @@ async function disconnectWallet() {
   await disconnect(config)
   account.value = null
   balance.value = null
+}
+
+function selectExperiment(experiment: Experiment) {
+  selectedExperiment.value = experiment
+  simulationState.value = createSimulationState(experiment.id)
+}
+
+function advanceScenario() {
+  simulationState.value = advanceSimulation(simulationState.value)
+}
+
+function resetScenario() {
+  simulationState.value = createSimulationState(selectedExperiment.value.id)
 }
 
 onMounted(() => {
@@ -102,12 +120,12 @@ onMounted(() => {
           :key="experiment.id"
           class="experiment-card"
           :class="{ active: selectedExperiment.id === experiment.id }"
-          @click="selectedExperiment = experiment"
+          @click="selectExperiment(experiment)"
         >
           <div class="card-topline"><span class="status-dot"></span>{{ experiment.status }}</div>
           <h2>{{ experiment.title }}</h2>
           <p>{{ experiment.shortTitle }}</p>
-          <button type="button" class="text-button" @click.stop="selectedExperiment = experiment">查看实验细节 →</button>
+          <button type="button" class="text-button" @click.stop="selectExperiment(experiment)">查看实验细节 →</button>
         </article>
       </div>
 
@@ -123,6 +141,39 @@ onMounted(() => {
           <span>链上结果</span>
           <p>{{ selectedExperiment.result }}</p>
         </div>
+        <section class="simulation-panel" aria-label="应用场景模拟">
+          <div class="simulation-heading">
+            <div>
+              <span>应用场景模拟</span>
+              <h3>{{ selectedScenario.name }}</h3>
+            </div>
+            <small>仅模拟流程，不发送链上交易</small>
+          </div>
+          <p class="simulation-context">{{ selectedScenario.context }}</p>
+
+          <ol class="simulation-steps">
+            <li
+              v-for="(step, index) in selectedScenario.steps"
+              :key="step.title"
+              :class="{ done: index < simulationState.currentStep, current: index === simulationState.currentStep && !simulationState.completed }"
+            >
+              <span class="step-index">{{ index + 1 }}</span>
+              <div><strong>{{ step.actor }}：{{ step.title }}</strong><p>{{ step.description }}</p></div>
+            </li>
+          </ol>
+
+          <div class="simulation-actions">
+            <button v-if="!simulationState.completed" type="button" @click="advanceScenario">
+              {{ simulationState.currentStep === 0 ? selectedScenario.startLabel : `继续：${nextSimulationStep?.title}` }}
+            </button>
+            <strong v-else class="simulation-success">{{ selectedScenario.completeLabel }}</strong>
+            <button v-if="simulationState.currentStep > 0" type="button" class="secondary reset-button" @click="resetScenario">重新模拟</button>
+          </div>
+
+          <ul v-if="simulationState.timeline.length" class="simulation-timeline" aria-label="模拟事件记录">
+            <li v-for="entry in simulationState.timeline" :key="entry">{{ entry }}</li>
+          </ul>
+        </section>
         <div class="proof-list">
           <span>Proof</span>
           <ul>

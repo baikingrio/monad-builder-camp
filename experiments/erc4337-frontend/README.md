@@ -6,6 +6,14 @@
 - Paymaster / sponsored UserOperation
 - Session Key / 受限权限
 
+页面还提供三个可逐步点击的应用场景模拟：
+
+- 新用户领取活动徽章：先预测地址、预充值，再由第一笔 UserOperation 部署账户并领取。
+- 免 Gas 的首次活动签到：Paymaster deposit 预存预算，用户签名后由 Paymaster 在规则内赞助 Gas。
+- 链游每日签到：Session Key 只允许低风险 `checkIn(string)`，不能转 MON 或调用其他合约。
+
+每次点击只更新本地模拟状态与事件时间线，**不会发送链上交易**。
+
 ## 开发
 
 ```bash
