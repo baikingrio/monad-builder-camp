@@ -1,1 +1,0 @@
-{"root":["./src/env.d.ts","./src/main.ts","./src/lib/erc4337Experiments.ts","./src/lib/wagmi.ts","./src/App.vue","./tests/App.test.ts","./tests/erc4337Experiments.test.ts","./tests/setup.ts","./tests/wagmi.test.ts","./vite.config.ts"],"version":"5.9.3"}
