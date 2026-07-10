@@ -29,6 +29,7 @@
 该模块已接入浏览器钱包真实写入操作：
 
 - 质押：`transferAndCall(vault, amount, 0x)`
+- 注入分红（仅 Vault owner）：`transferAndCall(vault, amount, abi.encode(uint8(1)))`
 - 领取分红：`vault.claim()`
 - 提取质押：`vault.withdraw(amount)`
 

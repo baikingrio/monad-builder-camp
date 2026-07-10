@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { connect, disconnect, getAccount, switchChain, writeContract } from '@wagmi/core'
-import { createPublicClient, formatUnits, http, type Hash } from 'viem'
+import { createPublicClient, encodeAbiParameters, formatUnits, http, type Hash } from 'viem'
 import { computed, onMounted, ref } from 'vue'
 import {
   erc1363TokenAbi,
@@ -23,6 +23,7 @@ const isReading = ref(false)
 const errorMessage = ref<string | null>(null)
 const txHash = ref<Hash | null>(null)
 const stakeInput = ref('')
+const fundingInput = ref('')
 const withdrawInput = ref('')
 const tokenDecimals = ref(18)
 const tokenSymbol = ref('TOKEN')
@@ -98,7 +99,7 @@ async function disconnectWallet() {
   pendingRewards.value = null
 }
 
-async function submitWrite(kind: 'stake' | 'claim' | 'withdraw') {
+async function submitWrite(kind: 'stake' | 'fund' | 'claim' | 'withdraw') {
   if (!deployment || !account.value || isBusy.value) return
   isBusy.value = true
   errorMessage.value = null
@@ -114,6 +115,16 @@ async function submitWrite(kind: 'stake' | 'claim' | 'withdraw') {
         args: [deployment.vaultAddress, amount, '0x']
       })
       stakeInput.value = ''
+    } else if (kind === 'fund') {
+      const amount = parseTokenAmount(fundingInput.value, tokenDecimals.value)
+      txHash.value = await writeContract(config, {
+        chainId: monadTestnet.id,
+        address: deployment.tokenAddress,
+        abi: erc1363TokenAbi,
+        functionName: 'transferAndCall',
+        args: [deployment.vaultAddress, amount, encodeAbiParameters([{ type: 'uint8' }], [1])]
+      })
+      fundingInput.value = ''
     } else if (kind === 'claim') {
       txHash.value = await writeContract(config, {
         chainId: monadTestnet.id,
@@ -191,6 +202,12 @@ onMounted(() => {
         <p>调用 Token 的 <code>transferAndCall(vault, amount, 0x)</code>。</p>
         <label>数量 <input v-model="stakeInput" inputmode="decimal" placeholder="例如 10" :disabled="writesDisabled" /></label>
         <button type="submit" :disabled="writesDisabled">质押</button>
+      </form>
+      <form @submit.prevent="submitWrite('fund')">
+        <h2>注入分红</h2>
+        <p>仅 Vault owner 可调用 <code>transferAndCall(vault, amount, abi.encode(uint8(1)))</code>。</p>
+        <label>数量 <input v-model="fundingInput" inputmode="decimal" placeholder="例如 20" :disabled="writesDisabled" /></label>
+        <button type="submit" :disabled="writesDisabled">注入分红</button>
       </form>
       <article>
         <h2>领取分红</h2>

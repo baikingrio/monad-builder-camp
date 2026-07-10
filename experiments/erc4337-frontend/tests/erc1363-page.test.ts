@@ -32,6 +32,7 @@ describe('ERC-1363 staking page', () => {
     expect(screen.getByRole('heading', { name: /ERC-1363 质押分红/ })).toBeInTheDocument()
     expect(screen.getByText('未配置合约地址')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '质押' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '注入分红' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '领取分红' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '提取质押' })).toBeDisabled()
   })
