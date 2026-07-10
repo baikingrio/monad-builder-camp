@@ -1,0 +1,31 @@
+{
+  "name": "erc4337-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vue-tsc -b && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vitejs/plugin-vue": "latest",
+    "@wagmi/core": "latest",
+    "viem": "latest",
+    "vite": "latest",
+    "vue": "latest",
+    "wagmi": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/vue": "latest",
+    "@tsconfig/node22": "latest",
+    "@types/node": "latest",
+    "@vue/test-utils": "latest",
+    "jsdom": "latest",
+    "typescript": "^5.9.3",
+    "vitest": "latest",
+    "vue-tsc": "latest"
+  }
+}
