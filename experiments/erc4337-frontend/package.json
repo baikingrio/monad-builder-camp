@@ -4,28 +4,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vue-tsc -b && vite build",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "nuxi dev --host 0.0.0.0",
+    "build": "nuxi build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "latest",
     "@wagmi/core": "latest",
     "viem": "latest",
-    "vite": "latest",
-    "vue": "latest",
     "wagmi": "latest"
   },
   "devDependencies": {
+    "@nuxt/test-utils": "^4.0.0",
     "@testing-library/jest-dom": "latest",
     "@testing-library/vue": "latest",
-    "@tsconfig/node22": "latest",
     "@types/node": "latest",
-    "@vue/test-utils": "latest",
+    "@vitejs/plugin-vue": "latest",
     "jsdom": "latest",
+    "nuxt": "^4.0.0",
     "typescript": "^5.9.3",
-    "vitest": "latest",
-    "vue-tsc": "latest"
+    "vitest": "latest"
   }
 }

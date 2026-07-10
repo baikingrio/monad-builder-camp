@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ENTRY_POINT_V08, experiments, getExperimentById, monadTestnet } from '../src/lib/erc4337Experiments'
+import { ENTRY_POINT_V08, experiments, getExperimentById, monadTestnet } from '../app/lib/erc4337Experiments'
 
 describe('ERC-4337 experiment catalogue', () => {
   it('keeps the Monad Testnet EntryPoint v0.8 and chain metadata available to the UI', () => {

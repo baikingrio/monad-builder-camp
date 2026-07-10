@@ -4,7 +4,7 @@ import {
   createSimulationState,
   getScenario,
   simulationScenarios
-} from '../src/lib/simulation'
+} from '../app/lib/simulation'
 
 describe('ERC-4337 application scenario simulation', () => {
   it('provides one practical scenario for each completed experiment', () => {

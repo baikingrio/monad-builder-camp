@@ -2,8 +2,8 @@
 import { connect, disconnect, getAccount, getBalance, switchChain } from '@wagmi/core'
 import { formatUnits } from 'viem'
 import { computed, onMounted, ref } from 'vue'
-import { config } from './lib/wagmi'
-import { advanceSimulation, createSimulationState, getScenario } from './lib/simulation'
+import { config } from '../lib/wagmi'
+import { advanceSimulation, createSimulationState, getScenario } from '../lib/simulation'
 import {
   ENTRY_POINT_V08,
   experiments,
@@ -11,7 +11,7 @@ import {
   getExplorerTxUrl,
   monadTestnet,
   type Experiment
-} from './lib/erc4337Experiments'
+} from '../lib/erc4337Experiments'
 
 const account = ref<`0x${string}` | null>(null)
 const balance = ref<string | null>(null)
@@ -74,6 +74,7 @@ function resetScenario() {
 }
 
 onMounted(() => {
+  if (!import.meta.client) return
   refreshWallet().catch(() => undefined)
 })
 </script>

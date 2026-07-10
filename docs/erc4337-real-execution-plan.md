@@ -6,7 +6,7 @@
 
 **架构：** 浏览器只连接用户 EOA、展示待签名内容并向受限后端提交已签名 UserOperation；后端保管赞助方私钥、签发短时赞助授权并作为 Bundler 调用 EntryPoint。合约仅接受后端签名的、已过期检查且与 UserOperation 内容绑定的赞助授权。Session Key 私钥只在用户浏览器本地生成和保存，链上权限限定在指定签到合约与函数。
 
-**技术栈：** Solidity 0.8.28 / Foundry、Vue 3 / TypeScript / Viem / Wagmi Core、Node.js 服务、Monad Testnet、Cloudflare Tunnel 或 Nginx HTTPS。
+**技术栈：** Solidity 0.8.28 / Foundry、Nuxt 4（Vue 3 / Nitro）/ TypeScript / Viem / Wagmi Core、Monad Testnet、Cloudflare Tunnel 或 Nginx HTTPS。
 
 ---
 
