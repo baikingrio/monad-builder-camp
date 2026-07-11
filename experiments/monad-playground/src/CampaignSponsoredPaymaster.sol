@@ -29,8 +29,12 @@ contract CampaignSponsoredPaymaster {
     address public immutable sponsorSigner;
 
     error NotEntryPoint();
+    error ZeroEntryPoint();
+    error ZeroSponsorSigner();
 
     constructor(address _entryPoint, address _sponsorSigner) {
+        if (_entryPoint == address(0)) revert ZeroEntryPoint();
+        if (_sponsorSigner == address(0)) revert ZeroSponsorSigner();
         entryPoint = _entryPoint;
         sponsorSigner = _sponsorSigner;
     }
@@ -41,9 +45,29 @@ contract CampaignSponsoredPaymaster {
         uint256 nonce,
         bytes memory initCode,
         bytes memory callData,
-        uint48 validUntil
+        bytes32 accountGasLimits,
+        uint256 preVerificationGas,
+        bytes32 gasFees,
+        uint48 validUntil,
+        uint128 verificationGasLimit,
+        uint128 postOpGasLimit
     ) public view returns (bytes32) {
-        return keccak256(abi.encode(sender, nonce, keccak256(initCode), keccak256(callData), validUntil, block.chainid, address(this)));
+        return keccak256(
+            abi.encode(
+                sender,
+                nonce,
+                keccak256(initCode),
+                keccak256(callData),
+                accountGasLimits,
+                preVerificationGas,
+                gasFees,
+                validUntil,
+                verificationGasLimit,
+                postOpGasLimit,
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /// @notice EntryPoint validation hook. A nonzero validationData rejects sponsorship without reverting the whole bundle.
@@ -58,13 +82,39 @@ contract CampaignSponsoredPaymaster {
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         if (address(bytes20(paymasterAndData[:20])) != address(this)) return ("", 1);
 
+        uint128 verificationGasLimit = uint128(bytes16(paymasterAndData[20:36]));
+        uint128 postOpGasLimit = uint128(bytes16(paymasterAndData[36:PAYMASTER_PREFIX_LENGTH]));
         uint48 validUntil = uint48(bytes6(paymasterAndData[PAYMASTER_PREFIX_LENGTH:PAYMASTER_PREFIX_LENGTH + VALID_UNTIL_LENGTH]));
         if (validUntil < block.timestamp) return ("", 1);
 
-        bytes32 digest = authorizationDigest(userOp.sender, userOp.nonce, userOp.initCode, userOp.callData, validUntil);
+        bytes32 digest = _authorizationDigest(userOp, validUntil, verificationGasLimit, postOpGasLimit);
         if (!_isValidSponsorSignature(digest, paymasterAndData[PAYMASTER_PREFIX_LENGTH + VALID_UNTIL_LENGTH:])) return ("", 1);
 
         return ("", 0);
+    }
+
+    function _authorizationDigest(
+        PackedUserOperation calldata userOp,
+        uint48 validUntil,
+        uint128 verificationGasLimit,
+        uint128 postOpGasLimit
+    ) private view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                userOp.sender,
+                userOp.nonce,
+                keccak256(userOp.initCode),
+                keccak256(userOp.callData),
+                userOp.accountGasLimits,
+                userOp.preVerificationGas,
+                userOp.gasFees,
+                validUntil,
+                verificationGasLimit,
+                postOpGasLimit,
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     function _isValidSponsorSignature(bytes32 digest, bytes calldata signature) private view returns (bool) {
@@ -79,7 +129,7 @@ contract CampaignSponsoredPaymaster {
             v := byte(0, calldataload(add(signature.offset, 64)))
         }
         if (v < 27) v += 27;
-        if (v != 27 && v != 28 || uint256(s) == 0 || uint256(s) > SECP256K1N_DIV_2) return false;
+        if (v != 27 && v != 28 || uint256(r) == 0 || uint256(s) == 0 || uint256(s) > SECP256K1N_DIV_2) return false;
 
         return ecrecover(digest, v, r, s) == sponsorSigner;
     }

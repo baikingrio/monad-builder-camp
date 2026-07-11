@@ -86,6 +86,7 @@ npm run dev
 - `/`：ERC-4337 实验页
 - `/erc1363`：ERC-1363 质押分红页
 - `/api/health`：Nitro 健康检查
+- `/api/sponsor`：仅本地/开发学习环境的私有 Sponsor 授权签名端点；默认关闭，**不得公开暴露**。它只由服务端签发 Paymaster 授权，既不广播 UserOperation，也不提供 Relay 或 Bundler 服务，因此不是可公开直接使用的免 Gas 流程。完整边界见 [Sponsor 授权端点：安全边界设计](./docs/sponsor-endpoint-design.md)。
 
 ## 环境变量
 
@@ -95,7 +96,9 @@ npm run dev
 cp .env.example .env
 ```
 
-- `NUXT_RELAY_URL`、`NUXT_RELAY_API_KEY`：后续 ERC-4337 Relay 使用的服务端私有配置，不能暴露为 `NUXT_PUBLIC_`。
+- `NUXT_SPONSOR_PRIVATE_KEY`：Sponsor 授权签名所需的服务端私钥，绝不能使用 `NUXT_PUBLIC_` 前缀或返回给客户端。
+- `NUXT_SPONSOR_SIGNING_ENABLED`：私有本地/开发开关，默认 `false`。只有显式设为 `true` 才会签名；在实现持久认证、限流、配额、预算和熔断器前，绝不能将此路由公开部署。
+- `NUXT_PUBLIC_SPONSOR_PAYMASTER_ADDRESS`、`NUXT_PUBLIC_SPONSOR_CHECKIN_TARGET_ADDRESS`：Sponsor 授权使用的公开 Monad Testnet 合约地址；未配置时 `/api/health` 会报告 Sponsor 不可用。
 - `NUXT_PUBLIC_ERC1363_TOKEN_ADDRESS`、`NUXT_PUBLIC_ERC1363_VAULT_ADDRESS`：只在需要覆盖默认 Monad Testnet 部署地址时设置；它们是公开合约地址，不是密钥。
 
 不要提交 `.env`、私钥、API Key、Foundry `broadcast/` 或 `cache/` 文件。

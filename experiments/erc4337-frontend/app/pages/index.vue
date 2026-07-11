@@ -114,6 +114,15 @@ onMounted(() => {
       <div><span>EntryPoint</span><a :href="getExplorerAddressUrl(ENTRY_POINT_V08)" target="_blank" rel="noreferrer">{{ ENTRY_POINT_V08.slice(0, 10) }}…{{ ENTRY_POINT_V08.slice(-6) }}</a></div>
     </section>
 
+    <section class="wallet-panel" aria-label="Sponsor 授权安全边界">
+      <div>
+        <p class="panel-label">Sponsor 授权安全边界</p>
+        <strong>仅服务端私有学习用途</strong>
+        <p>授权端点默认关闭，只可在本地/开发学习环境由服务端签发 Paymaster 授权；Sponsor 私钥不会进入浏览器。</p>
+        <p>该服务只签名授权，不广播 UserOperation，也不提供 Relay 或 Bundler 服务；这不是可公开直接使用的免 Gas 流程。</p>
+      </div>
+    </section>
+
     <section class="content-grid">
       <div class="experiment-list" aria-label="实验列表">
         <article
