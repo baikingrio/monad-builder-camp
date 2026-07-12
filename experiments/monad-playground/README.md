@@ -397,9 +397,44 @@ forge script script/SessionKeyPracticeV08.s.sol:SessionKeyPracticeV08 \
 
 注意：只使用课程专用测试网钱包，不要把私钥、助记词、`.env` 或 broadcast cache 中的敏感信息提交到仓库。
 
+### 第七步：ERC-7702 EOA 委托 + Relayer 批量 Check-in（真实 Monad Testnet）
+
+已在 Monad Testnet 真实完成 EIP-7702 `type 0x04` 交易。由于 Monad 对已委托 EOA 有“余额被扣减后不能低于 `10 MON`”的规则，本次由独立的本地 relayer 支付 Gas；课程 EOA 只签署链绑定授权，因此 EOA 余额不会因该笔执行被扣减。
+
+关键中文注释对应的链上流程：
+
+1. 课程 EOA 部署 `EIP7702CheckInTarget` 与受限执行器 `EIP7702RelayedCheckInExecutor`；
+2. 课程 EOA 仅给本地 relayer 一小笔测试 MON 作为 Gas 预算；relayer 私钥只保留在忽略的 `.env`；
+3. 课程 EOA 对 Executor 签署 Monad Testnet 授权，relayer 将授权放入 `type 0x04` 交易；
+4. `type 0x04` 交易调用已委托 EOA 的 `runDemo()`，Executor 只允许这个固定 relayer，并只会对固定 Target 连续执行两次 `checkIn()`；
+5. Target 记录的 `lastActor` 是被委托 EOA，证明两次调用在 EOA 的执行上下文中完成。
+
+真实链上地址与结果：
+
+- Delegated EOA：[`0x7c0343c808B827e4286381c2292d92c3f19152a4`](https://testnet.monadvision.com/address/0x7c0343c808B827e4286381c2292d92c3f19152a4)
+- CheckIn Target：[`0x8777d8DF77eD81c2bf17feAAe7F086eEF9f2517A`](https://testnet.monadvision.com/address/0x8777d8DF77eD81c2bf17feAAe7F086eEF9f2517A)
+- Relayed Executor：[`0x697b1971AC691d20693e98FC503999F0Cb2bB493`](https://testnet.monadvision.com/address/0x697b1971AC691d20693e98FC503999F0Cb2bB493)
+- [Target 部署交易](https://testnet.monadvision.com/tx/0x47d916e1fd0896554c253ea6d00b9c876008547a94be8a73da565e4d7260a395)
+- [Executor 部署交易](https://testnet.monadvision.com/tx/0xa8feae29a4bd434fb5c480cf9682b93d16633e7e2b39ae1b37c5b627197c26a2)
+- [真实 EIP-7702 type-0x04 交易](https://testnet.monadvision.com/tx/0x46d56e952b2b737ec02caf9e80751e098ecca08f04356df74805d7418008fec4)
+
+公开读取验证：`checkInCount = 2`，`lastActor = 0x7c0343c808B827e4286381c2292d92c3f19152a4`，EOA code 是 `0xef0100 || 0x697b1971AC691d20693e98FC503999F0Cb2bB493`。
+
+运行脚本：
+
+```shell
+# 先只模拟，确认会产生 type-0x04 交易后再加 --broadcast
+forge script script/DeployRelayedEIP7702Demo.s.sol:DeployRelayedEIP7702Demo \
+  --rpc-url https://testnet-rpc.monad.xyz \
+  -vvvv
+```
+
+安全边界：执行器没有任意 target、任意 calldata 或转账函数；固定 relayer 只能使已委托 EOA 对固定 Target 调用两次 `checkIn()`。这仍是学习版，不可直接扩展为通用托管 / 免 Gas 服务。
+
 ## 参考
 
 - [Foundry Book](https://book.getfoundry.sh/)
 - [Monad Foundry 部署指南](https://docs.monad.xyz/guides/deploy-smart-contract/foundry)
 - [Monad Foundry 源码验证指南](https://docs.monad.xyz/guides/verify-smart-contract/foundry)
 - [ERC-4337 Docs](https://docs.erc4337.io/)
+- [EIP-7702：Set Code for EOAs](https://eips.ethereum.org/EIPS/eip-7702)

@@ -35,6 +35,17 @@
 
 每笔操作都要求用户的钱包确认，页面会展示 MonadVision 交易链接。
 
+### ERC-7702 EOA 委托模块
+
+页面 `/erc7702` 展示已在 **Monad Testnet** 完成的真实 ERC-7702 Proof：
+
+1. 课程 EOA 签署了绑定 Monad Testnet（Chain ID `10143`）的授权；
+2. 固定 relayer 提交 `type 0x04` 交易并支付 Gas；
+3. EOA code 写入 delegation indicator，指向受限的 `EIP7702RelayedCheckInExecutor`；
+4. 该笔交易在同一笔执行中真实调用 Target 两次，`checkInCount = 2` 且 `lastActor` 为被委托 EOA。
+
+页面只通过公开 RPC 读取合约状态和 EOA code，并提供 MonadVision 链接；它不保存私钥、不代表浏览器钱包签名、也不提供任意 relayer 调用入口。relayer 只能调用固定 Target 两次，不能执行任意 calldata 或转出 EOA 资产。
+
 ## ERC-1363 Testnet 部署
 
 - StakeRewardToken（SRT）：`0x37AFF878FB6b6f4bdDcC6629a5Be46060f526531`
@@ -85,6 +96,7 @@ npm run dev
 
 - `/`：ERC-4337 实验页
 - `/erc1363`：ERC-1363 质押分红页
+- `/erc7702`：ERC-7702 Monad Testnet 真实链上 Proof 与公开 RPC 状态读取
 - `/api/health`：Nitro 健康检查
 - `/api/sponsor`：仅本地/开发学习环境的私有 Sponsor 授权签名端点；默认关闭，**不得公开暴露**。它只由服务端签发 Paymaster 授权，既不广播 UserOperation，也不提供 Relay 或 Bundler 服务，因此不是可公开直接使用的免 Gas 流程。完整边界见 [Sponsor 授权端点：安全边界设计](./docs/sponsor-endpoint-design.md)。
 
