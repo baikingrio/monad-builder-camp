@@ -348,6 +348,14 @@ Explorer：
 - Account deploy tx: https://testnet.monadvision.com/tx/0x8775ef8bf00937d77112533b9801aab484f35448b3923be4c3fe01f48344f88f
 - session key handleOps tx: https://testnet.monadvision.com/tx/0x1b40ca3f39e74b859d917bd927d3efee7c12484a54ce5610c6a9ec41d9bc224d
 
+### 第六步：Sponsor 授权的只读 E2E 验证
+
+新增的 `CampaignSponsoredPaymaster` 将 Sponsor 签名绑定到完整 UserOperation。测试网部署并向 EntryPoint deposit `0.05 MON` 后，仅以本地新签发的短时授权执行只读验证：原始请求返回 `validationData = 0`；仅篡改 `gasFees` 则返回 `validationData = 1`。整个过程没有提交 `handleOps`、relay 或广播交易。
+
+- Paymaster：[`0xfe178d0068d91325118e65eA193D21976e9d8fcF`](https://testnet.monadvision.com/address/0xfe178d0068d91325118e65eA193D21976e9d8fcF)
+- [部署交易](https://testnet.monadvision.com/tx/0x5e1c43345f3ac5799decc9908cc3c935529360e9713f212ee85daebd696b7fe1)；[deposit `0.05 MON`](https://testnet.monadvision.com/tx/0xd1ed671e59c5099d30e266e8110888ba48771f8e54a2fa78d439f6fe930a9f82)
+- [完整只读 E2E 验证记录](docs/sponsor-authorization-e2e-verification.md)
+
 运行方式：
 
 ```shell
