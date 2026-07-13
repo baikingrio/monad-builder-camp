@@ -59,7 +59,9 @@
 **今天阅读的资料**
 
 - Moss README、Getting Started、Agent Skill Guide、Protocol Onboarding、CONTRIBUTING；
-- Moss GitHub Issue [#16](https://github.com/nishuzumi/moss/issues/16)：面向新手的 Quick Start 建议。
+- Moss GitHub Issue [#16](https://github.com/nishuzumi/moss/issues/16)：面向新手的 Quick Start 建议；
+- [Web3 技术如何从 0 到 1 用 AI 开发实时活动截图](../../submissions/assets/2026-07-13-web3-ai-development-live.jpg)；
+- [7.13 Co-learning 实时活动截图](../../submissions/assets/2026-07-13-co-learning-live.jpg)。
 
 **Prompt / AI 协作主题**
 
