@@ -88,15 +88,19 @@ Dev Builder，侧重 Monad 链上交互、安全边界和可验证 Proof。
 
 原因是新增 Adapter 需要验证地址和 ABI 来源、声明能力/风险/`expects`、添加链上模拟测试、准备效果摘要并通过完整 CI。当前更适合先把已有工具读透，再做范围清楚、可审查的小贡献。
 
-### 本周目标
+### 本周目标与实际进展
 
-完成一次真实、可公开验证的 GitHub 协作：优先是针对新手 Quick Start 或 README → Getting Started 路径的高质量 Issue / 文档改动；如果确认了具体且小的文档问题，再提交 PR。
+我已完成一次真实、可公开验证的 GitHub 协作：为 [Issue #18](https://github.com/nishuzumi/moss/issues/18) 提交了 [PR #19](https://github.com/nishuzumi/moss/pull/19)。
 
-### 预计产出
+这个 Issue 是 Windows 用户在 `core.autocrlf=true` 环境运行离线测试时，Kuru ABI 来源测试因 CRLF / LF 换行符差异失败。我的 PR 新增 `.gitattributes`，让 Git 将文本文件以 LF 检出，从而同时稳定生成文件来源测试和 Biome 格式检查。
 
-- 1 个公开的 GitHub Issue 或 Pull Request 链接；
-- 1 份说明问题背景、修改范围与核查方式的贡献记录；
-- 如提交 PR，附上项目要求的测试或文档检查证据。
+我先在模拟 Windows 换行环境中复现问题，再在新鲜检出中验证：`MOSS_SKIP_E2E=1 pnpm test`、`pnpm lint`、`pnpm build`、`pnpm typecheck` 都通过。PR 当前处于 Open 状态，后续会跟进 CI 与 Maintainer Review。
+
+### 实际产出
+
+- [公开 Pull Request #19](https://github.com/nishuzumi/moss/pull/19)；
+- Issue 背景、修复范围与验证证据均已写入 PR 描述；
+- 该 PR 可作为第一次 GitHub 协作和 Proof of Work 的公开证据。
 
 ### 完成计划
 
