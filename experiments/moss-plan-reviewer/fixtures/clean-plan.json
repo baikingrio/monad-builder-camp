@@ -1,0 +1,15 @@
+{
+  "intent": {
+    "maxSpends": [{ "asset": "WMON", "amount": "100" }],
+    "allowedApprovalSpenders": ["0xrouter"],
+    "allowedRecipients": ["0xrouter"]
+  },
+  "simulation": {
+    "warnings": [],
+    "effects": {
+      "spends": [{ "asset": "WMON", "amount": "100" }],
+      "approvals": [{ "spender": "0xrouter", "amount": "50" }],
+      "receives": [{ "asset": "USDC", "amount": "200", "recipient": "0xrouter" }]
+    }
+  }
+}
