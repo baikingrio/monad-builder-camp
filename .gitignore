@@ -17,6 +17,7 @@ build/
 .cache/
 
 # local files
+.hermes/
 .DS_Store
 *.log
 .tmp/
