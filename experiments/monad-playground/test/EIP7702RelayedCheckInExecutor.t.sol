@@ -28,6 +28,19 @@ contract EIP7702RelayedCheckInExecutorTest is Test {
         assertEq(target.lastActor(), owner, "the target sees the delegated EOA as msg.sender");
     }
 
+    function testDelegatedEoaAcceptsNativeMon() public {
+        vm.prank(relayer);
+        vm.signAndAttachDelegation(address(executor), OWNER_KEY);
+
+        vm.deal(relayer, 1 ether);
+        uint256 balanceBefore = owner.balance;
+
+        (bool accepted,) = payable(owner).call{value: 0.1 ether}("");
+
+        assertTrue(accepted, "the delegated EOA must accept a plain native MON transfer");
+        assertEq(owner.balance, balanceBefore + 0.1 ether);
+    }
+
     function testUnauthorizedCallerCannotTriggerDelegatedEoa() public {
         vm.prank(relayer);
         vm.signAndAttachDelegation(address(executor), OWNER_KEY);

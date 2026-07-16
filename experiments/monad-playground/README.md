@@ -431,6 +431,20 @@ forge script script/DeployRelayedEIP7702Demo.s.sol:DeployRelayedEIP7702Demo \
 
 安全边界：执行器没有任意 target、任意 calldata 或转账函数；固定 relayer 只能使已委托 EOA 对固定 Target 调用两次 `checkIn()`。这仍是学习版，不可直接扩展为通用托管 / 免 Gas 服务。
 
+### 第八步：为已委托 EOA 补充原生 MON 收款能力（真实 Monad Testnet）
+
+之前向课程 EOA 直接转入 `10 MON` 的普通交易失败，是因为旧 Executor 没有 `receive()` 或 `fallback()`：空 calldata 的原生币转账会进入委托代码并 revert。失败交易的 `status = 0`，资产没有到账。
+
+为保留最小权限边界，我没有添加任意转账、任意 target 或任意 calldata 能力，只在同一个固定 `runDemo()` Executor 中增加了 payable `receive()`。它只接受原生 MON 并发出 `NativeMonReceived` 事件，不提供任何资产提取或执行入口。
+
+由于课程 EOA 的余额仍低于 Monad 已委托账户的 `10 MON` post-gas reserve，新的授权继续由固定 relayer 支付 Gas：
+
+- Receive-enabled Executor：[`0x0398162B317b367541F5557A09b49F14cbA4C26B`](https://testnet.monadvision.com/address/0x0398162B317b367541F5557A09b49F14cbA4C26B)
+- [Executor 部署交易](https://testnet.monadvision.com/tx/0x82613dacdde0afcd4e9da036d307513d63baf82940107f138c27b0c0eddfb177)，`status = 1`
+- [新的 EIP-7702 授权与固定 check-in 交易](https://testnet.monadvision.com/tx/0x74d433ec525faafad067f2038772c71b8738ee7b5916ae50c57b8ffa2d6c4d95)，`type = 0x4`、`status = 1`
+
+链上读取确认：`checkInCount = 4`，`lastActor` 仍是课程 EOA；课程 EOA 的 delegation indicator 已指向 receive-enabled Executor。通过 `eth_call` 对一笔 `10 MON` 空 calldata 转账的预检查返回 `0x`，说明该收款路径已不再 revert。实际转账仍应由资金来源钱包单独签名并广播。
+
 ## 参考
 
 - [Foundry Book](https://book.getfoundry.sh/)

@@ -15,11 +15,16 @@ contract EIP7702RelayedCheckInExecutor {
     error NotRelayer();
 
     event DemoExecuted(address indexed delegatedEoa, address indexed relayer, address indexed target);
+    event NativeMonReceived(address indexed sender, uint256 amount);
 
     constructor(address _relayer, address _target) {
         if (_relayer == address(0) || _target == address(0)) revert ZeroAddress();
         relayer = _relayer;
         target = _target;
+    }
+
+    receive() external payable {
+        emit NativeMonReceived(msg.sender, msg.value);
     }
 
     /// @notice 由固定 relayer 调用；代码在已委托 EOA 的上下文执行，因此 Target 观察到的 msg.sender 是该 EOA。
