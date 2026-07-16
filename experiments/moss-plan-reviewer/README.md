@@ -62,6 +62,12 @@ npm test
 
 人工修改的关键原则是：不因为模拟没有 warning 就自动放行，也不将 Plan Reviewer 扩展为钱包或交易执行器。
 
+## Prototype Evidence 与 Known Issues
+
+可检查的运行方式、当前完成范围、mock 边界与后续限制见 [Prototype Evidence](./docs/prototype-evidence.md)。
+
+当前没有接入 Moss MCP、RPC、钱包或真实链上模拟；它也没有浏览器界面、录屏或测试网交易。后续若接入真实工具，只应映射公开的 `action` / `simulate` 输出，不能把审核器扩展成自动签名或自动交易器。
+
 ## 参考文档
 
 - [Moss README](https://github.com/nishuzumi/moss)
