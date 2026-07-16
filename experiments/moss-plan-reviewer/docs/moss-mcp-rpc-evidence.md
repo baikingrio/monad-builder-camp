@@ -52,6 +52,24 @@ MOSS_SOURCE_DIR=/absolute/path/to/moss node scripts/run-moss-mcp-evidence.mjs
 - simulation 返回 `ok: true`、`warningCount: 0`；
 - 该结果只表示 Plan 与模拟结果一致，仍需要根据用户真实意图进行人工核对。
 
+## Monad Testnet 证明回执（独立路径）
+
+为让这次已经完成的主网只读模拟具有可公开核验的链上锚点，课程 EOA 在 **Monad Testnet（Chain ID `10143`）** 部署了一个最小 `MossPlanHashProof` 合约，并只执行一次 `recordZeroWarningPlan()`。
+
+- Proof 合约：[0xb733…B1C2](https://testnet.monadvision.com/address/0xb733571fE1461161B27Bc055389b926Ddd81B1C2)
+- 部署交易：[0xb8be…18c4](https://testnet.monadvision.com/tx/0xb8be8f389ce46ab48b63378a3bf6892fd91ec41138513a52ea4ee4e2e68618c4)
+- 记录交易：[0x04df…3557](https://testnet.monadvision.com/tx/0x04df92272152531d110a274714430a250fce3341bdaec0f3787b602ffd753557)
+
+链上已独立核验：两个 receipt 的 `status` 均为 `1`；合约的 `planHash` 为 `0xd79ace0ec5ac5e8f53b8a5ea96d500db16e405c40c82d8e190fd39ac25915fcf`，`sourceChainId` 为 `143`，`recorded = true`，且 `owner` 与 `recorder` 都是课程 EOA `0x7c0343c808B827e4286381c2292d92c3f19152a4`。记录事件的 `warningCount` 为 `0`。
+
+这份 Testnet Proof 是一个**固定 PlanHash 的可验证回执**：合约只允许部署者记录一次，不接收私钥、不调用 MCP、不验证模拟，也不具备执行、签名或广播任意交易的能力。它不能证明 Moss 在 Testnet 上执行过该 Plan，更不能把主网 simulation 说成 Testnet 交易。
+
+合约源码、部署脚本与测试位于：
+
+- `experiments/monad-playground/src/MossPlanHashProof.sol`
+- `experiments/monad-playground/script/DeployMossPlanHashProof.s.sol`
+- `experiments/monad-playground/test/MossPlanHashProof.t.sol`
+
 ## 与本地 Reviewer 的关系
 
 本地 `reviewPlan` 保持纯函数和离线 fixture 测试；它不会因为连接到 MCP 就获得自动执行权。

@@ -75,7 +75,12 @@ npm test
 
 可检查的运行方式、当前完成范围、mock 边界与后续限制见 [Prototype Evidence](./docs/prototype-evidence.md)。
 
-当前没有接入 Moss MCP、RPC、钱包或真实链上模拟；它也没有浏览器界面、录屏或测试网交易。后续若接入真实工具，只应映射公开的 `action` / `simulate` 输出，不能把审核器扩展成自动签名或自动交易器。
+已完成的真实证据分为两条、不可混同的路径：
+
+1. **Moss MCP + Monad Mainnet RPC：** `discover → load → action → simulate` 生成未签名 Plan，并得到 `warningCount = 0`；该路径不签名、不广播。
+2. **Monad Testnet 证明回执：** 课程 EOA 在独立的最小合约中记录了上述固定 `planHash` 与源链 `143`。详情、交易链接及边界见 [MCP / RPC Evidence](./docs/moss-mcp-rpc-evidence.md)。
+
+第二条仅是对已检查的公开 MCP 结果的测试网可验证回执，**不是** Moss 在 Testnet 上执行、签名或广播交易。Reviewer 本身仍不连接钱包、不保存私钥，也不会自动放行或自动执行交易；它也没有浏览器界面或录屏。
 
 ## 参考文档
 
