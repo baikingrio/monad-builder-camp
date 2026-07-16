@@ -1,0 +1,42 @@
+{
+  "mode": "read-only MCP + live Monad mainnet RPC simulation",
+  "rpcUrl": "https://rpc.monad.xyz",
+  "toolNames": [
+    "action",
+    "discover",
+    "load",
+    "simulate"
+  ],
+  "discovered": [
+    {
+      "protocol": "wmon",
+      "method": "wrap",
+      "kind": "capability",
+      "verb": "wrap",
+      "category": "token",
+      "tags": [
+        "wrapper"
+      ],
+      "summary": "Wrap {amount} native MON into WMON"
+    }
+  ],
+  "loaded": [
+    {
+      "protocol": "wmon",
+      "method": "wrap"
+    }
+  ],
+  "plan": {
+    "chainId": 143,
+    "protocol": "wmon",
+    "method": "wrap",
+    "txCount": 1,
+    "planHash": "0xd79ace0ec5ac5e8f53b8a5ea96d500db16e405c40c82d8e190fd39ac25915fcf"
+  },
+  "simulation": {
+    "ok": true,
+    "warningCount": 0,
+    "guidance": "No warnings. Verify the effects match the user's intent, then the unsigned transactions may be handed to the signer."
+  },
+  "safetyBoundary": "Moss MCP generated and simulated an unsigned Plan only; this script never reads a wallet key, signs, or broadcasts a transaction."
+}

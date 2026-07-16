@@ -22,14 +22,23 @@ discover → load → action → simulate → 人工核对 → 钱包确认
 4. 检查接收方是否在声明的 allowlist 内；
 5. 即使以上全部通过，也返回 `REVIEW_REQUIRED`，要求用户在钱包中完成最终确认。
 
+## MCP / RPC Evidence
+
+审核器核心仍是纯函数，并使用本地 fixture 测试；另外提供了一个独立的证据脚本，通过官方 Moss MCP Server 的 stdio transport 调用 `discover → load → action → simulate`，并使用 Monad Mainnet RPC 进行真实状态模拟。
+
+- 运行脚本：[scripts/run-moss-mcp-evidence.mjs](./scripts/run-moss-mcp-evidence.mjs)
+- MCP / RPC 过程与限制：[docs/moss-mcp-rpc-evidence.md](./docs/moss-mcp-rpc-evidence.md)
+- 本次公开结果：[docs/moss-mcp-mainnet-result.json](./docs/moss-mcp-mainnet-result.json)
+
+这条路径只生成和模拟未签名 Plan，不读取私钥、不签名、不广播，也不将 simulation 结果表述为交易成功保证。
+
 ## 不做什么
 
-- 不调用 Moss MCP Server 或任何 RPC；
-- 不生成交易、签名或发送交易；
-- 不读取私钥、助记词、钱包或环境变量；
-- 不把模拟结果写成交易成功保证。
+- 不让 Reviewer 自动生成、签名或发送交易；
+- 不读取私钥、助记词或钱包环境变量；
+- 不把 mock fixture 或主网 simulation 写成真实交易成功保证。
 
-因此 `fixtures/` 中的 Plan 和模拟结果均为本地 mock 数据，只用于验证审核逻辑。
+`fixtures/` 中的 Plan 和模拟结果仍为本地 mock 数据，只用于验证审核逻辑。
 
 ## 运行
 
