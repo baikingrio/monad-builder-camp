@@ -8,6 +8,7 @@
 
 - [Moss 学习笔记、GitHub 探索与开源贡献计划](../week2/2026-07-13-moss-open-source.md)
 - [从 Moss 的未签名 Plan，到一个可检查的安全审核器](../week2/2026-07-16-moss-plan-reviewer-practice.md)
+- [02｜ERC-4626 Adapter 贡献调研与设计草案](./02-erc4626-adapter-contribution.md)
 - [Moss Plan Reviewer 原型](../../experiments/moss-plan-reviewer/README.md)
 - [MCP / RPC 与 Testnet Proof](../../experiments/moss-plan-reviewer/docs/moss-mcp-rpc-evidence.md)
 
