@@ -90,24 +90,25 @@ Dev Builder，侧重 Monad 链上交互、安全边界和可验证 Proof。
 
 ### 本周目标与实际进展
 
-我已完成一次真实、可公开验证的 GitHub 协作：为 [Issue #18](https://github.com/nishuzumi/moss/issues/18) 提交了 [PR #19](https://github.com/nishuzumi/moss/pull/19)。
+我的贡献计划是优先从真实、范围小、可审查的开发者体验问题开始。这个目标已完成：我为 [Issue #18](https://github.com/nishuzumi/moss/issues/18) 提交了 [PR #19](https://github.com/nishuzumi/moss/pull/19)，并已由 Maintainer `nishuzumi` 于 2026-07-14 合并到 Moss `main`。
 
 这个 Issue 是 Windows 用户在 `core.autocrlf=true` 环境运行离线测试时，Kuru ABI 来源测试因 CRLF / LF 换行符差异失败。我的 PR 新增 `.gitattributes`，让 Git 将文本文件以 LF 检出，从而同时稳定生成文件来源测试和 Biome 格式检查。
 
-我先在模拟 Windows 换行环境中复现问题，再在新鲜检出中验证：`MOSS_SKIP_E2E=1 pnpm test`、`pnpm lint`、`pnpm build`、`pnpm typecheck` 都通过。PR 当前处于 Open 状态，后续会跟进 CI 与 Maintainer Review。
+我先在模拟 Windows 换行环境中复现问题，再在新鲜检出中验证：`MOSS_SKIP_E2E=1 pnpm test`、`pnpm lint`、`pnpm build`、`pnpm typecheck` 都通过。合并提交为 [`94adfea`](https://github.com/nishuzumi/moss/commit/94adfeade9c92176cd3163abad20ae64f6a7b19a)。
 
 ### 实际产出
 
-- [公开 Pull Request #19](https://github.com/nishuzumi/moss/pull/19)；
+- [已合并 Pull Request #19](https://github.com/nishuzumi/moss/pull/19)；
 - Issue 背景、修复范围与验证证据均已写入 PR 描述；
+- [合并提交 94adfea](https://github.com/nishuzumi/moss/commit/94adfeade9c92176cd3163abad20ae64f6a7b19a)；
 - 该 PR 可作为第一次 GitHub 协作和 Proof of Work 的公开证据。
 
-### 完成计划
+### 后续贡献计划
 
-1. 对比 README、Getting Started、CONTRIBUTING 和 Issue #16，列出真实的阅读路径缺口；
-2. 把改进范围控制在一个问题内，例如 README 的新手入口、常见失败排查或模拟安全边界解释；
-3. 提交前确认不重复现有文档、不夸大 Moss 的安全能力；
-4. 若是 PR，遵循 `main` 分支、说明动机/改动/验证证据等贡献规范；
+1. 持续阅读 README、Getting Started、CONTRIBUTING、当前 ADR 与 Protocol Onboarding；
+2. 对新的贡献方向先确认不重复现有 PR，也不把旧架构重新引入当前 `main`；
+3. 当前重点研究 ERC-4626 #13：先确认最小可贡献切片，再按项目规范准备设计、测试和验证证据；
+4. 后续 PR 继续遵循 `main` 分支、清晰说明动机 / 范围 / 验证证据等贡献规范；
 5. 记录公开链接，作为“第一次 GitHub 协作”和“Proof of Work”的共同证据。
 
 ## 资料链接
