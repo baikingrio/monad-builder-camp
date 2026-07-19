@@ -10,6 +10,8 @@
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
+    "@safe-global/protocol-kit": "^4.1.0",
+    "@safe-global/relay-kit": "^3.1.0",
     "@wagmi/core": "latest",
     "viem": "latest",
     "wagmi": "latest"
@@ -23,6 +25,7 @@
     "jsdom": "latest",
     "nuxt": "^4.0.0",
     "typescript": "^5.9.3",
+    "vite-plugin-node-polyfills": "^0.28.0",
     "vitest": "latest"
   }
 }
