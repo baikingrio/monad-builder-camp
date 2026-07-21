@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import Safe4337MonadPage from '../app/pages/safe-4337-monad.vue'
 
@@ -16,14 +16,15 @@ describe('Monad Safe 4337 page', () => {
   it('shows an accessible zero-value UserOperation learning preset and its pre-send boundary', () => {
     render(Safe4337MonadPage)
 
-    expect(screen.getByRole('heading', { name: '预设 UserOperation 学习案例' })).toBeInTheDocument()
-    expect(screen.getByText('未设置（不使用真实 Safe 地址）')).toBeInTheDocument()
-    expect(screen.getByText('0')).toBeInTheDocument()
-    expect(screen.getByText(/空 calldata/i)).toBeInTheDocument()
-    expect(screen.getByText(/Safe.*存在/i)).toBeInTheDocument()
-    expect(screen.getByText(/Owner.*签名/i)).toBeInTheDocument()
-    expect(screen.getByText(/Bundler.*模拟/i)).toBeInTheDocument()
-    expect(screen.getByText(/Paymaster.*自付 gas/i)).toBeInTheDocument()
-    expect(screen.getByText('这是预设学习案例：未签名、未模拟、未发送，不可发送。')).toBeInTheDocument()
+    const learningCase = within(screen.getByRole('region', { name: '预设 UserOperation 学习案例' }))
+    expect(learningCase.getByRole('heading', { name: '预设 UserOperation 学习案例' })).toBeInTheDocument()
+    expect(learningCase.getByText('未设置（不使用真实 Safe 地址）')).toBeInTheDocument()
+    expect(learningCase.getByText('0')).toBeInTheDocument()
+    expect(learningCase.getByText(/空 calldata/i)).toBeInTheDocument()
+    expect(learningCase.getByText(/Safe.*存在/i)).toBeInTheDocument()
+    expect(learningCase.getByText(/Owner.*签名/i)).toBeInTheDocument()
+    expect(learningCase.getByText(/Bundler.*模拟/i)).toBeInTheDocument()
+    expect(learningCase.getByText(/Paymaster.*自付 gas/i)).toBeInTheDocument()
+    expect(learningCase.getByText('这是预设学习案例：未签名、未模拟、未发送，不可发送。')).toBeInTheDocument()
   })
 })

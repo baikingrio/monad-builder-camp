@@ -95,7 +95,7 @@ async function verifyContracts() {
         <ul>
           <li v-for="check in MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.preSendChecks" :key="check">{{ check }}</li>
         </ul>
-        <p class="wallet-error" role="status">{{ learningCaseStatus.message }}</p>
+        <p class="wallet-error">{{ learningCaseStatus.message }}</p>
       </div>
     </section>
 
