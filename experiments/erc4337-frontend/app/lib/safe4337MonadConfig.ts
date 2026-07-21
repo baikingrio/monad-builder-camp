@@ -1,6 +1,12 @@
+import { buildPimlicoV2RpcUrl, PIMLICO_MONAD_TESTNET_CHAIN } from './pimlicoEndpoints'
+
 export const MONAD_TESTNET_CHAIN_ID = 10143
+export const MONAD_ENTRY_POINT_V06 = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789'
 export const MONAD_ENTRY_POINT_V07 = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
+/** Monad 文档列出的 Safe 4337 Module（与 EntryPoint v0.7 路线对齐，供只读验证页使用）。 */
 export const MONAD_SAFE_4337_MODULE = '0x75cf11467937ce3F2f357CE24ffc3DBF8fD5c226'
+/** Safe4337 Module v0.2.0 + EntryPoint v0.6；@safe-global/relay-kit v3 仅支持 modules 0.2.0。 */
+export const MONAD_SAFE_4337_MODULE_V020 = '0xa581c4A4DB7175302464fF3C06380BC3270b4037'
 export const MONAD_SAFE_V141 = '0x41675C099F32341bf84BFc5382aF534df5C7461a'
 
 export type MonadSafe4337LearningCase = {
@@ -50,7 +56,6 @@ export function getMonadSafe4337Readiness(pimlicoApiKey: string | undefined): Mo
     }
   }
 
-  const query = new URLSearchParams([['apikey', pimlicoApiKey.trim()]]).toString()
-  const endpoint = `https://api.pimlico.io/v2/10143/rpc?${query}`
+  const endpoint = buildPimlicoV2RpcUrl(PIMLICO_MONAD_TESTNET_CHAIN, pimlicoApiKey.trim())
   return { ready: true, bundlerUrl: endpoint, paymasterUrl: endpoint }
 }

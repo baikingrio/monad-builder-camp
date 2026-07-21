@@ -26,7 +26,8 @@ describe('Monad Safe 4337 configuration', () => {
     const readiness = getMonadSafe4337Readiness('demo-key')
     expect(readiness.ready).toBe(true)
     if (readiness.ready) {
-      expect(readiness.bundlerUrl).toContain('/v2/10143/rpc?')
+      expect(readiness.bundlerUrl).toContain('/v2/monad-testnet/rpc?')
+      expect(readiness.bundlerUrl).toContain('add_balance_override&apikey=')
       expect(readiness.bundlerUrl).toContain('demo-key')
       expect(readiness.paymasterUrl).toBe(readiness.bundlerUrl)
     }

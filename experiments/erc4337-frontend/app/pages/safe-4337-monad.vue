@@ -15,14 +15,8 @@ const isChecking = ref(false)
 const checked = ref(false)
 const status = ref('')
 const codeChecks = ref<Record<string, boolean>>({})
-const pimlicoApiKey = ref('')
-
-try {
-  pimlicoApiKey.value = String(useRuntimeConfig().public.NUXT_PUBLIC_MONAD_PIMLICO_API_KEY ?? '')
-} catch {
-  // Vitest/static rendering intentionally stays read-only without Nuxt runtime config.
-}
-
+const runtimeConfig = useRuntimeConfig()
+const pimlicoApiKey = computed(() => String(runtimeConfig.public.monadPimlicoApiKey ?? ''))
 const readiness = computed(() => getMonadSafe4337Readiness(pimlicoApiKey.value))
 const learningCaseStatus = getMonadSafe4337LearningCaseStatus()
 const contracts = [

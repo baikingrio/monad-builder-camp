@@ -14,8 +14,9 @@ export default defineNuxtConfig({
       ERC1363_VAULT_ADDRESS: '0xeF0dDBa411E5586C0B441A068EAAe77a4552B7a7',
       SPONSOR_PAYMASTER_ADDRESS: '',
       SPONSOR_CHECKIN_TARGET_ADDRESS: '',
-      NUXT_PUBLIC_PIMLICO_API_KEY: '',
-      NUXT_PUBLIC_MONAD_PIMLICO_API_KEY: ''
+      // .env: NUXT_PUBLIC_PIMLICO_API_KEY / NUXT_PUBLIC_MONAD_PIMLICO_API_KEY
+      pimlicoApiKey: '',
+      monadPimlicoApiKey: ''
     }
   },
   typescript: {

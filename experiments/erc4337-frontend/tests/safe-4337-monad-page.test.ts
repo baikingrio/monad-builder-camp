@@ -1,8 +1,12 @@
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Safe4337MonadPage from '../app/pages/safe-4337-monad.vue'
 
 describe('Monad Safe 4337 page', () => {
+  beforeEach(() => {
+    vi.stubGlobal('useRuntimeConfig', () => ({ public: { monadPimlicoApiKey: '' } }))
+  })
+
   it('identifies the supported Safe 4337 route without presenting Safe Passkey as officially supported', () => {
     render(Safe4337MonadPage)
 

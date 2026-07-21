@@ -1,12 +1,8 @@
 import { extractPasskeyData, type PasskeyArgType } from '@safe-global/protocol-kit'
 import { Safe4337Pack } from '@safe-global/relay-kit'
-import { encodeFunctionData } from 'viem'
-import {
-  SAFE_PASSKEY_NFT_ADDRESS,
-  SEPOLIA_PAYMASTER_ADDRESS,
-  SEPOLIA_RPC_URL,
-  type SafePasskeyReadiness
-} from './safePasskeyConfig'
+import type { SafePasskeyReadiness } from './safePasskeyConfig'
+import { withMonadPasskeySdkPatch, MONAD_FCL_P256_VERIFIER } from './safePasskeyMonadSdkPatch'
+import { safePasskeyFeeEstimator } from './safePasskeyFeeEstimator'
 
 function requireReady(config: SafePasskeyReadiness): Extract<SafePasskeyReadiness, { ready: true }> {
   if (!config.ready) throw new Error(config.message)
@@ -35,17 +31,37 @@ export async function createBrowserPasskey(): Promise<PasskeyArgType> {
 
 async function createSafe4337Pack(passkey: PasskeyArgType, config: SafePasskeyReadiness) {
   const ready = requireReady(config)
-  return Safe4337Pack.init({
-    provider: SEPOLIA_RPC_URL,
-    signer: passkey,
-    bundlerUrl: ready.bundlerUrl,
-    paymasterOptions: {
-      isSponsored: true,
-      paymasterAddress: SEPOLIA_PAYMASTER_ADDRESS,
-      paymasterUrl: ready.paymasterUrl
-    },
-    options: { owners: [], threshold: 1 }
-  })
+  const { network } = ready
+  const signer =
+    network.id === 'monad'
+      ? { ...passkey, customVerifierAddress: passkey.customVerifierAddress ?? MONAD_FCL_P256_VERIFIER }
+      : passkey
+  const paymasterOptions = network.sepoliaPaymasterAddress
+    ? {
+        isSponsored: true as const,
+        paymasterAddress: network.sepoliaPaymasterAddress,
+        paymasterUrl: ready.paymasterUrl
+      }
+    : {
+        isSponsored: true as const,
+        paymasterUrl: ready.paymasterUrl
+      }
+
+  const init = () =>
+    Safe4337Pack.init({
+      provider: network.rpcUrl,
+      signer,
+      bundlerUrl: ready.bundlerUrl,
+      paymasterOptions,
+      safeModulesVersion: network.id === 'monad' ? '0.2.0' : undefined,
+      customContracts: network.customContracts,
+      options: { owners: [], threshold: 1 }
+    })
+
+  if (network.id === 'monad') {
+    return withMonadPasskeySdkPatch(init)
+  }
+  return init()
 }
 
 export async function getSafeAccountInfo(passkey: PasskeyArgType, config: SafePasskeyReadiness) {
@@ -56,27 +72,21 @@ export async function getSafeAccountInfo(passkey: PasskeyArgType, config: SafePa
   }
 }
 
-export async function mintPracticeNft(passkey: PasskeyArgType, safeAddress: string, config: SafePasskeyReadiness) {
+export async function submitPracticeUserOperation(
+  passkey: PasskeyArgType,
+  safeAddress: string,
+  config: SafePasskeyReadiness
+) {
+  const ready = requireReady(config)
   const safe4337Pack = await createSafe4337Pack(passkey, config)
-  const data = encodeFunctionData({
-    abi: [{
-      type: 'function',
-      name: 'safeMint',
-      stateMutability: 'nonpayable',
-      inputs: [{ name: 'to', type: 'address' }, { name: 'tokenId', type: 'uint256' }],
-      outputs: []
-    }],
-    functionName: 'safeMint',
-    args: [safeAddress as `0x${string}`, randomUint256()]
-  })
+  const data = ready.network.buildPracticeCalldata(safeAddress)
   const operation = await safe4337Pack.createTransaction({
-    transactions: [{ to: SAFE_PASSKEY_NFT_ADDRESS, data, value: '0' }]
+    transactions: [{ to: ready.network.practiceTargetAddress, data, value: '0' }],
+    options: { feeEstimator: safePasskeyFeeEstimator }
   })
   const signedOperation = await safe4337Pack.signSafeOperation(operation)
   return safe4337Pack.executeTransaction({ executable: signedOperation })
 }
 
-function randomUint256(): bigint {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return bytes.reduce((result, value) => (result << 8n) | BigInt(value), 0n)
-}
+/** @deprecated 使用 submitPracticeUserOperation；保留别名供文档/旧引用。 */
+export const mintPracticeNft = submitPracticeUserOperation
