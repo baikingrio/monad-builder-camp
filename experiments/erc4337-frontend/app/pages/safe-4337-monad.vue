@@ -6,6 +6,8 @@ import {
   MONAD_ENTRY_POINT_V07,
   MONAD_SAFE_4337_MODULE,
   MONAD_SAFE_V141,
+  MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE,
+  getMonadSafe4337LearningCaseStatus,
   getMonadSafe4337Readiness
 } from '../lib/safe4337MonadConfig'
 
@@ -22,6 +24,7 @@ try {
 }
 
 const readiness = computed(() => getMonadSafe4337Readiness(pimlicoApiKey.value))
+const learningCaseStatus = getMonadSafe4337LearningCaseStatus()
 const contracts = [
   { name: 'Safe v1.4.1', address: MONAD_SAFE_V141 },
   { name: 'Safe 4337 Module', address: MONAD_SAFE_4337_MODULE },
@@ -79,6 +82,21 @@ async function verifyContracts() {
         <button type="button" :disabled="isChecking" @click="verifyContracts">{{ isChecking ? '读取中…' : '验证链上基础合约' }}</button>
       </div>
       <p v-if="status" class="wallet-error" role="status">{{ status }}</p>
+    </section>
+
+    <section class="wallet-panel" aria-label="预设 UserOperation 学习案例">
+      <div>
+        <p class="panel-label">步骤 2 · 仅供学习</p>
+        <h2>预设 UserOperation 学习案例</h2>
+        <p><strong>目标：</strong>{{ MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.target }}</p>
+        <p><strong>Value：</strong>{{ MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.value }}</p>
+        <p><strong>Calldata：</strong>{{ MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.calldata }}</p>
+        <strong>发送前检查清单</strong>
+        <ul>
+          <li v-for="check in MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.preSendChecks" :key="check">{{ check }}</li>
+        </ul>
+        <p class="wallet-error" role="status">{{ learningCaseStatus.message }}</p>
+      </div>
     </section>
 
     <section class="wallet-panel" aria-label="Passkey 支持边界">

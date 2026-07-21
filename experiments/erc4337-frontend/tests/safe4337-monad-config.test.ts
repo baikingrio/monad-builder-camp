@@ -3,6 +3,8 @@ import {
   MONAD_ENTRY_POINT_V07,
   MONAD_SAFE_4337_MODULE,
   MONAD_SAFE_V141,
+  MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE,
+  getMonadSafe4337LearningCaseStatus,
   getMonadSafe4337Readiness
 } from '../app/lib/safe4337MonadConfig'
 
@@ -28,5 +30,28 @@ describe('Monad Safe 4337 configuration', () => {
       expect(readiness.bundlerUrl).toContain('demo-key')
       expect(readiness.paymasterUrl).toBe(readiness.bundlerUrl)
     }
+  })
+
+  it('provides a zero-value learning-only UserOperation preset with every pre-send check', () => {
+    expect(MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE).toMatchObject({
+      label: '预设零值 UserOperation 学习案例',
+      target: '未设置（不使用真实 Safe 地址）',
+      value: '0'
+    })
+    expect(MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.calldata).toMatch(/空 calldata/i)
+    expect(MONAD_SAFE_4337_ZERO_VALUE_LEARNING_CASE.preSendChecks).toEqual(expect.arrayContaining([
+      expect.stringMatching(/Safe.*存在/i),
+      expect.stringMatching(/Owner.*签名/i),
+      expect.stringMatching(/Bundler.*模拟/i),
+      expect.stringMatching(/Paymaster.*自付 gas/i)
+    ]))
+  })
+
+  it('marks the learning preset as not ready because it is not signed, simulated, or sent', () => {
+    expect(getMonadSafe4337LearningCaseStatus()).toEqual({
+      ready: false,
+      status: 'learning-only',
+      message: '这是预设学习案例：未签名、未模拟、未发送，不可发送。'
+    })
   })
 })
