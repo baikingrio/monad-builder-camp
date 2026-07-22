@@ -39,6 +39,16 @@ contract MonadLuckyDrawTest is Test {
         vm.prank(PLAYER);
         vm.expectRevert();
         LuckyDrawValueCaller(address(draw)).draw{value: 1 wei}();
+
+        assertEq(draw.drawCount(PLAYER), 0);
+    }
+
+    function testUnknownSelectorRevertsWithoutChangingDrawCount() public {
+        vm.prank(PLAYER);
+        (bool success,) = address(draw).call(hex"deadbeef");
+
+        assertFalse(success);
+        assertEq(draw.drawCount(PLAYER), 0);
     }
 
     function testMultipleCallersAndDrawsStayBoundedAndIndependent() public {

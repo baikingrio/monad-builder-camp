@@ -5,3 +5,4 @@ node_modules/
 coverage/
 contracts/broadcast/
 contracts/cache/
+contracts/out/
