@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@safe-global/protocol-kit": "^4.1.0",
-    "viem": "latest"
+    "ox": "^0.11.3",
+    "permissionless": "^0.3.7",
+    "viem": "^2.44.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "latest",

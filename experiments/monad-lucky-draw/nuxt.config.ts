@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     luckyDrawPimlicoApiKey: '',
     luckyDrawSponsorMaxGas: '',
     luckyDrawSponsorTotalBudget: '',
+    luckyDrawSafe4337Module: '',
     luckyDrawFaucetEnabled: false,
     luckyDrawFaucetPrivateKey: '',
     public: {
