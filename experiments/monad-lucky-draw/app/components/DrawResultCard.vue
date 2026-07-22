@@ -11,10 +11,11 @@ const props = defineProps<{ state: DemoState; firstDrawAvailable: boolean }>()
     <p class="description">首次流程计划由 Sponsor 支持 Safe 激活与一次抽奖；本页仅展示前置条件，不执行 AA 或 Sponsor 请求。</p>
     <button
       type="button"
-      :disabled="!props.firstDrawAvailable"
+      disabled
       aria-describedby="activation-help"
-    >首次赞助激活并抽奖（尚不可用）</button>
-    <p id="activation-help" class="help">登录、Safe 验证与 Sponsor 就绪后才可用；当前界面预览不会创建 UserOperation。</p>
+    >首次赞助激活并抽奖（集成待完成）</button>
+    <p v-if="props.firstDrawAvailable" id="activation-help" class="help">前置条件已就绪；实际 UserOperation 集成仍待完成，当前不会创建 UserOperation。</p>
+    <p v-else id="activation-help" class="help">登录、Safe 验证与 Sponsor 就绪后才能准备实际 UserOperation；当前界面预览不会创建 UserOperation。</p>
 
     <div class="divider" aria-hidden="true"></div>
     <h3>后续抽奖</h3>

@@ -30,7 +30,7 @@ describe('Monad Lucky Draw 首页', () => {
 
     const button = screen.getByRole('button', { name: /首次赞助激活并抽奖/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText(/登录、Safe 验证与 Sponsor 就绪后才可用/)).toBeTruthy()
+    expect(screen.getByText(/登录、Safe 验证与 Sponsor 就绪后才能准备实际 UserOperation/)).toBeTruthy()
   })
 
   it('不展示 UserOperation、交易哈希成功文本或任何成功链接', () => {

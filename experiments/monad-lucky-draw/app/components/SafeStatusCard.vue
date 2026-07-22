@@ -14,6 +14,7 @@ defineProps<{ state: DemoState }>()
       <strong>{{ state.safeDeployed ? '已部署' : '未部署' }}</strong>
     </div>
     <p v-if="!state.safeDerivationVerified" class="warning">尚未验证 Safe 派生，因此不展示或声称任何 Safe 地址。</p>
+    <p v-else-if="state.safeDeployed" class="warning">Safe 已确认部署；链上部署状态已确认。</p>
     <p v-else class="warning">Safe 已派生待部署；部署状态仍须由链上确认。</p>
     <ul>
       <li>登录与 EOA 绑定：{{ state.authenticated ? '已验证' : '未就绪' }}</li>
