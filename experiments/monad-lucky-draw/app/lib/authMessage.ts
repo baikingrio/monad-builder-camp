@@ -44,10 +44,16 @@ function requireOrigin(value: string): string {
   return value
 }
 
+const CANONICAL_UTC_MILLISECONDS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+
 function requireInstant(value: string, field: string): number {
+  if (!CANONICAL_UTC_MILLISECONDS.test(value)) {
+    throw new Error(`${field} must be a canonical UTC RFC3339 millisecond timestamp`)
+  }
+
   const timestamp = Date.parse(value)
-  if (!Number.isFinite(timestamp)) {
-    throw new Error(`${field} must be a valid date-time`)
+  if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString() !== value) {
+    throw new Error(`${field} must be a canonical UTC RFC3339 millisecond timestamp`)
   }
   return timestamp
 }

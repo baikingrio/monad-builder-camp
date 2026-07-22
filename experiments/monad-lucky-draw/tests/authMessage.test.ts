@@ -53,6 +53,21 @@ describe('EOA login message', () => {
   ])('rejects invalid login input', (input) => {
     expect(() => buildLoginMessage(input)).toThrow()
   })
+
+  it.each([
+    { ...loginInput, issuedAt: '2026-07-22' },
+    { ...loginInput, issuedAt: '2026-07-22T10:00:00.000' },
+    { ...loginInput, issuedAt: '2026-07-22T10:00:00.000+08:00' },
+    { ...loginInput, issuedAt: '2026-02-30T10:00:00.000Z' },
+    { ...loginInput, issuedAt: '2026-07-22T10:00:00Z' },
+    { ...loginInput, expiresAt: '2026-07-22' },
+    { ...loginInput, expiresAt: '2026-07-22T10:05:00.000' },
+    { ...loginInput, expiresAt: '2026-07-22T10:05:00.000+08:00' },
+    { ...loginInput, expiresAt: '2026-02-30T10:05:00.000Z' },
+    { ...loginInput, expiresAt: '2026-07-22T10:05:00Z' }
+  ])('rejects non-canonical UTC millisecond timestamps', (input) => {
+    expect(() => buildLoginMessage(input)).toThrow()
+  })
 })
 
 describe('Safe derivation request input', () => {

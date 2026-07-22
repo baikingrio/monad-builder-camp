@@ -11,6 +11,8 @@ export type DemoStatus =
 export interface DemoState {
   readonly status: DemoStatus
   readonly walletConnected: boolean
+  /** The connected EOA; all authentication and Safe readiness is bound to it. */
+  readonly connectedEoa?: string
   readonly authenticated: boolean
   readonly onMonadTestnet: boolean
   /** Set only after a future verified Safe SDK/factory derivation. */
@@ -22,7 +24,7 @@ export interface DemoState {
 }
 
 export type DemoEvent =
-  | { type: 'walletConnected' }
+  | { type: 'walletConnected'; eoa: string }
   | { type: 'walletDisconnected' }
   | { type: 'authenticated' }
   | { type: 'authenticationCleared' }
@@ -77,21 +79,53 @@ export function isDrawAvailable(state: DemoState): boolean {
  */
 export function transitionDemoState(state: DemoState, event: DemoEvent): DemoState {
   if (event.type === 'walletDisconnected') return createDemoState()
-  if (event.type === 'activationFailed') {
-    return { ...state, status: 'failed', error: event.error || 'Activation failed' }
+
+  // An activation request is in flight. Late UI/provider events cannot alter
+  // its account-bound preconditions or start a second activation.
+  if (state.status === 'activationPending') {
+    if (event.type === 'activationSucceeded') {
+      return normalise({ ...state, safeDeployed: true })
+    }
+    if (event.type === 'activationFailed') {
+      return { ...state, status: 'failed', error: event.error || 'Activation failed' }
+    }
+    if (event.type === 'activationStarted') {
+      throw new Error('activation is already pending')
+    }
+    return state
+  }
+
+  if (event.type === 'activationSucceeded' || event.type === 'activationFailed') {
+    throw new Error('activation is not pending')
   }
   if (state.status === 'failed') {
     throw new Error('clear or disconnect a failed demo state before continuing')
   }
 
   switch (event.type) {
-    case 'walletConnected':
-      return normalise({ ...state, walletConnected: true })
+    case 'walletConnected': {
+      if (state.connectedEoa !== undefined && state.connectedEoa !== event.eoa) {
+        return normalise({
+          ...state,
+          connectedEoa: event.eoa,
+          authenticated: false,
+          safeDerivationVerified: false,
+          safeDeployed: false,
+          sponsorReady: false
+        })
+      }
+      return normalise({ ...state, walletConnected: true, connectedEoa: event.eoa })
+    }
     case 'authenticated':
       if (!state.walletConnected) throw new Error('wallet connection is required before authentication')
       return normalise({ ...state, authenticated: true })
     case 'authenticationCleared':
-      return normalise({ ...state, authenticated: false, sponsorReady: false })
+      return normalise({
+        ...state,
+        authenticated: false,
+        safeDerivationVerified: false,
+        sponsorReady: false
+      })
     case 'monadTestnetChanged':
       return normalise({ ...state, onMonadTestnet: event.ready })
     case 'safeDerivationVerified':
@@ -100,12 +134,12 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
       }
       return normalise({ ...state, safeDerivationVerified: true })
     case 'sponsorReadinessChanged':
+      if (event.ready && (!state.walletConnected || !state.authenticated || !state.safeDerivationVerified)) {
+        throw new Error('verified wallet, authentication and Safe derivation are required before sponsor readiness')
+      }
       return normalise({ ...state, sponsorReady: event.ready })
     case 'activationStarted':
       if (!isDrawAvailable(state)) throw new Error('activation prerequisites are not ready')
       return { ...state, status: 'activationPending' }
-    case 'activationSucceeded':
-      if (state.status !== 'activationPending') throw new Error('activation is not pending')
-      return normalise({ ...state, safeDeployed: true })
   }
 }
