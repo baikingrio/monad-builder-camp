@@ -47,6 +47,6 @@ export function evaluateFixedSimulationReadiness(store: AuthClaimStore, input: S
     contactedBundler: false,
     sponsorUsed: false,
     blockers: Object.freeze(blockers),
-    metadata: Object.freeze({ chainId: 10143, entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint, safeFactory: MONAD_ACTIVATION_CONFIG.safeFactory, target: MONAD_ACTIVATION_CONFIG.luckyDraw, drawSelector: '0x35d1193c', value: '0', mode: 'preparation-only' })
+    metadata: Object.freeze({ chainId: 10143, entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint, safeFactory: MONAD_ACTIVATION_CONFIG.safeFactory, target: MONAD_ACTIVATION_CONFIG.luckyDraw, drawSelector: '0x0eecae21', value: '0', mode: 'preparation-only' })
   })
 }

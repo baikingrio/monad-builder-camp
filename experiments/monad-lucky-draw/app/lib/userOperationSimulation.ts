@@ -3,7 +3,7 @@ import { createMonadActivationConfig, type MonadActivationConfig } from './monad
 import { deriveMonadCounterfactualSafe } from './safeAddress'
 
 /** ABI selector for the sole permitted LuckyDraw.draw() call. */
-export const LUCKY_DRAW_DRAW_SELECTOR = '0x35d1193c' as const
+export const LUCKY_DRAW_DRAW_SELECTOR = '0x0eecae21' as const
 
 export interface ConfirmedCounterfactualSafeState {
   readonly address: string

@@ -102,7 +102,7 @@ describe('activation construction and simulation safety gate', () => {
       safeFactory: MONAD_ACTIVATION_CONFIG.safeFactory,
       entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint
     })
-    expect(draft.callData).toBe('0x35d1193c')
+    expect(draft.callData).toBe('0x0eecae21')
     expect(Object.keys(draft)).not.toContain('signature')
     expect(Object.keys(draft)).not.toContain('broadcast')
   })

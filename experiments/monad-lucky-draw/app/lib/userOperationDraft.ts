@@ -2,7 +2,7 @@ import { evaluateActivationReadiness, type ActivationReadinessInput } from './ac
 import { createMonadActivationConfig } from './monadConfig'
 
 /** ABI selector for MonadLuckyDraw.draw(); immutable for this milestone. */
-export const LUCKY_DRAW_CALLDATA = '0x35d1193c' as const
+export const LUCKY_DRAW_CALLDATA = '0x0eecae21' as const
 
 export interface ActivationSimulationDraft {
   readonly kind: 'activation-simulation-draft'
