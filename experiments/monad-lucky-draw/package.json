@@ -1,0 +1,26 @@
+{
+  "name": "monad-lucky-draw",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev --host 0.0.0.0",
+    "build": "nuxi build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@safe-global/protocol-kit": "^4.1.0",
+    "viem": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/vue": "latest",
+    "@types/node": "latest",
+    "@vitejs/plugin-vue": "latest",
+    "jsdom": "latest",
+    "nuxt": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "latest"
+  }
+}

@@ -1,0 +1,13 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.28"
+
+# Monad Testnet. Broadcasting requires explicit user approval and a locally provided RPC/account.
+chain_id = 10143
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
