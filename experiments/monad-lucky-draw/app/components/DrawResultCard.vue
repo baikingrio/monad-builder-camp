@@ -9,16 +9,15 @@ const props = defineProps<{ state: DemoState; firstDrawAvailable: boolean; activ
   <section class="panel" aria-labelledby="draw-title">
     <div class="eyebrow">步骤 3</div>
     <h2 id="draw-title">激活与抽奖</h2>
-    <p class="description">首次流程计划由 Sponsor 支持 Safe 激活与一次抽奖；本页仅展示前置条件，不执行 AA 或 Sponsor 请求。</p>
+    <p class="description">本页只展示固定的 v0.7 UserOperation 模拟准备条件；Sponsor、Bundler 与实际执行全部保持禁用。</p>
     <button
       type="button"
       disabled
       aria-describedby="activation-help"
-    >首次赞助激活并抽奖（集成待完成）</button>
-    <p v-if="props.firstDrawAvailable" id="activation-help" class="help">前置条件已就绪；实际 UserOperation 集成仍待完成，当前不会创建 UserOperation。</p>
-    <p v-else id="activation-help" class="help">登录、Safe 验证与 Sponsor 就绪后才能准备实际 UserOperation；当前界面预览不会创建 UserOperation。</p>
+    >模拟激活并抽卡（仅就绪预览）</button>
+    <p id="activation-help" class="help">此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor。只有已认证 EOA、确认未部署的反事实 Safe 与明确用户点击才可在服务器获得只读就绪状态。</p>
     <p v-if="props.activationReadiness && !props.activationReadiness.canConstructUserOperation" class="help readiness" role="status">
-      激活构造仍已禁用：{{ props.activationReadiness.blockers.join('；') }}。不会请求签名、调用 RPC 或广播 UserOperation。
+      真实激活仍已禁用：{{ props.activationReadiness.blockers.join('；') }}。不会请求签名、调用 Bundler 或广播 UserOperation。
     </p>
 
     <div class="divider" aria-hidden="true"></div>

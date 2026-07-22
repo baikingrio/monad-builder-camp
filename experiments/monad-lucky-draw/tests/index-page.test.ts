@@ -25,13 +25,13 @@ describe('Monad Lucky Draw 首页', () => {
     expect(screen.getByText(/Safe 地址派生不等于部署/)).toBeTruthy()
   })
 
-  it('在就绪条件为 false 时禁用首次赞助激活抽奖', () => {
+  it('禁用模拟激活并抽卡预览，并明确不签名或发送', () => {
     renderPage()
 
-    const button = screen.getByRole('button', { name: /首次赞助激活并抽奖/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText(/登录、Safe 验证与 Sponsor 就绪后才能准备实际 UserOperation/)).toBeTruthy()
-    expect(screen.getByText(/激活构造仍已禁用.*不会请求签名、调用 RPC 或广播 UserOperation/)).toBeTruthy()
+    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
+    expect(screen.getByText(/真实激活仍已禁用.*不会请求签名、调用 Bundler 或广播 UserOperation/)).toBeTruthy()
   })
 
   it('不展示 UserOperation、交易哈希成功文本或任何成功链接', () => {

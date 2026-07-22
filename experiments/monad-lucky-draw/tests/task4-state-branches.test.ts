@@ -56,7 +56,7 @@ describe('Task4 状态分支的诚实文案', () => {
     expect(screen.queryByText('已部署（链上只读检查）')).toBeNull()
   })
 
-  it('首次抽奖前置条件就绪时仍禁用预览按钮，并说明 UserOperation 集成待完成', () => {
+  it('首次抽奖前置条件就绪时仍禁用模拟预览按钮，并说明不会执行', () => {
     render(DrawResultCard, {
       props: {
         state: stateWith({ status: 'activationReady' }),
@@ -64,12 +64,12 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    const button = screen.getByRole('button', { name: /首次赞助激活并抽奖/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText('前置条件已就绪；实际 UserOperation 集成仍待完成，当前不会创建 UserOperation。')).toBeTruthy()
+    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
   })
 
-  it('首次抽奖前置条件未就绪时，同样禁用预览按钮并如实说明限制', () => {
+  it('首次抽奖前置条件未就绪时，同样禁用模拟预览按钮并如实说明限制', () => {
     render(DrawResultCard, {
       props: {
         state: stateWith({ status: 'safeDerived' }),
@@ -77,8 +77,8 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    const button = screen.getByRole('button', { name: /首次赞助激活并抽奖/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText('登录、Safe 验证与 Sponsor 就绪后才能准备实际 UserOperation；当前界面预览不会创建 UserOperation。')).toBeTruthy()
+    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
   })
 })

@@ -10,6 +10,8 @@ export interface AuthClaimStore {
   readNonce(id: string, now: number): NonceRecord | undefined
   consumeNonce(id: string, now: number): NonceRecord | undefined
   saveSession(session: SessionRecord): void
+  /** Read-only verification for preparation endpoints; does not consume login state. */
+  readSession(id: string, now: number): SessionRecord | undefined
   consumeSession(id: string, now: number): SessionRecord | undefined
   claimOnce(input: { claimId: string; eoa: string; safe: string }): boolean
   recordAudit(record: AuditRecord): void
@@ -30,6 +32,7 @@ export function createDevelopmentStore(): AuthClaimStore {
     readNonce(id, now) { const record = nonces.get(id); return !record || record.used || record.expiresAt <= now ? undefined : { ...record } },
     consumeNonce(id, now) { const record = nonces.get(id); if (!record || record.used || record.expiresAt <= now) return undefined; record.used = true; return { ...record } },
     saveSession(session) { sessions.set(session.id, { ...session, eoa: normalizeAddress(session.eoa) }) },
+    readSession(id, now) { const session = sessions.get(id); return !session || session.used || session.expiresAt <= now ? undefined : { ...session } },
     consumeSession(id, now) { const session = sessions.get(id); if (!session || session.used || session.expiresAt <= now) return undefined; session.used = true; return { ...session } },
     claimOnce({ claimId, eoa, safe }) { const keys = [`claim:${claimId}`, `eoa:${normalizeAddress(eoa)}`, `safe:${normalizeAddress(safe)}`]; if (keys.some((key) => claims.has(key))) return false; keys.forEach((key) => claims.add(key)); return true },
     recordAudit() {}
