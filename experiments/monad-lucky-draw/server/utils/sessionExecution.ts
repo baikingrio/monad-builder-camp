@@ -19,7 +19,7 @@ import { MONAD_ACTIVATION_CONFIG } from '../../app/lib/monadConfig'
 import { evaluateSessionKeyDraw } from '../../app/lib/sessionKeyPolicy'
 import { LUCKY_DRAW_DRAW_SELECTOR } from '../../app/lib/userOperationSimulation'
 import type { LiveExecutionConfig } from './liveExecutionConfig'
-import type { SessionGrantRecord } from './sessionKeyStore'
+import type { SessionGrantRecord } from './sqliteStore'
 
 const monadTestnet = defineChain({
   id: 10143,
@@ -90,8 +90,7 @@ async function sponsorSafeCalls(input: {
       maxFeePerGas: gasPrice.fast.maxFeePerGas,
       maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
       signature: stubSignature
-    },
-    entryPoint: { address: entryPoint07Address, version: '0.7' }
+    }
   })
 
   const userOperation = serializeUserOperationForClient({

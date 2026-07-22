@@ -120,8 +120,7 @@ export async function prepareSponsoredActivation(input: PrepareActivationInput):
       maxFeePerGas: gasPrice.fast.maxFeePerGas,
       maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
       signature: stubSignature
-    },
-    entryPoint: { address: entryPoint07Address, version: '0.7' }
+    }
   })
 
   const userOperation = serializeUserOperationForClient({

@@ -8,7 +8,7 @@ export function sanitizeActivationError(error: unknown): string {
   if (aa23) return `赞助模拟失败：${aa23[0].trim()}`
   if (/RPC Request failed/i.test(withoutKey)) {
     const details = withoutKey.match(/Details:\s*([^\n]+)/i)
-    return details ? `赞助模拟失败：${details[1].trim()}` : '赞助模拟失败：RPC 请求失败'
+    return details?.[1] ? `赞助模拟失败：${details[1].trim()}` : '赞助模拟失败：RPC 请求失败'
   }
   return withoutKey.length > 280 ? `${withoutKey.slice(0, 280)}…` : withoutKey
 }

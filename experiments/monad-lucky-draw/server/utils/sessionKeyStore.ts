@@ -1,8 +1,6 @@
 import { createSessionKeyGrantDraft } from '../../app/lib/sessionKeyPolicy'
 import { persistentStore, type SessionGrantRecord } from './sqliteStore'
 
-export type { SessionGrantRecord }
-
 export function upsertPendingSessionGrant(input: {
   eoa: string
   safe: string
