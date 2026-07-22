@@ -4,7 +4,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { loadPasskeys, savePasskey } from '../lib/passkeys'
 import { createBrowserPasskey, getSafeAccountInfo, submitPracticeUserOperation } from '../lib/safePasskeyActions'
 import { formatSafePasskeyError, getSafePasskeyReadiness } from '../lib/safePasskeyConfig'
-import { formatPimlicoProbeFailure, probePimlicoRpc } from '../lib/pimlicoEndpoints'
 import { parseSafePasskeyNetworkId, type SafePasskeyNetworkId } from '../lib/safePasskeyNetworks'
 
 const route = useRoute()
@@ -63,22 +62,11 @@ function switchNetwork(id: SafePasskeyNetworkId) {
   router.replace({ query: { ...route.query, network: id === 'monad' ? 'monad' : undefined } })
 }
 
-async function ensurePimlicoReachable(): Promise<boolean> {
-  if (!readiness.value.ready) return false
-  const probe = await probePimlicoRpc(readiness.value.bundlerUrl)
-  if (!probe.ok) {
-    status.value = formatPimlicoProbeFailure(probe)
-    return false
-  }
-  return true
-}
-
 async function refreshSafeInfo(passkey: PasskeyArgType) {
   if (!readiness.value.ready) {
     status.value = readiness.value.message
     return
   }
-  if (!(await ensurePimlicoReachable())) return
   const info = await getSafeAccountInfo(passkey, readiness.value)
   safeAddress.value = info.address
   isDeployed.value = info.isDeployed
@@ -126,7 +114,6 @@ async function submitPractice() {
   isBusy.value = true
   status.value = '正在请求 Passkey 签名并提交 UserOperation…'
   try {
-    if (!(await ensurePimlicoReachable())) return
     const userOperationHash = await submitPracticeUserOperation(
       selectedPasskey.value,
       safeAddress.value,
