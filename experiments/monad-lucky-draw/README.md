@@ -13,6 +13,15 @@ Monad Testnet 上的独立账户抽象抽卡实验。目标是让用户用自己
 
 详细执行计划：[`docs/2026-07-22-implementation-plan.md`](./docs/2026-07-22-implementation-plan.md)。
 
+## 已验证的链上基础
+
+`MonadLuckyDraw` 已部署到 Monad Testnet：
+
+- 合约地址：[`0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70`](https://testnet.monadvision.com/address/0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70)
+- 部署交易：[`0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6`](https://testnet.monadvision.com/tx/0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6)
+
+它只证明抽卡合约已部署；EOA 登录、AA Safe、Sponsor、真实 UserOperation 和 Session Key 仍未完成。完整核查见 [`docs/onchain-proof.md`](./docs/onchain-proof.md)。
+
 ## 安全边界
 
 - 仅 Monad Testnet（Chain ID `10143`），不处理真实资产；
