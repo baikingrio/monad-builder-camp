@@ -21,6 +21,7 @@
     "jsdom": "latest",
     "nuxt": "^4.0.0",
     "typescript": "^5.9.3",
-    "vitest": "latest"
+    "vitest": "latest",
+    "vue-tsc": "^3.3.7"
   }
 }

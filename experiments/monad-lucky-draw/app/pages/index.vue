@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { createDemoState, isDrawAvailable } from '../lib/demoState'
+import { evaluateActivationReadiness } from '../lib/activationReadiness'
+import { MONAD_ACTIVATION_CONFIG } from '../lib/monadConfig'
 import WalletConnectionPanel from '../components/WalletConnectionPanel.vue'
 import SafeStatusCard from '../components/SafeStatusCard.vue'
 import DrawResultCard from '../components/DrawResultCard.vue'
 
 const demoState = createDemoState()
-const firstDrawAvailable = isDrawAvailable(demoState)
+const activationReadiness = evaluateActivationReadiness({
+  config: MONAD_ACTIVATION_CONFIG,
+  sponsorPolicy: { persistent: false, authorized: false },
+  userClicked: false
+})
+const firstDrawAvailable = isDrawAvailable(demoState) && activationReadiness.canConstructUserOperation
 </script>
 
 <template>
@@ -27,7 +34,7 @@ const firstDrawAvailable = isDrawAvailable(demoState)
       <div class="cards">
         <WalletConnectionPanel :state="demoState" />
         <SafeStatusCard :state="demoState" />
-        <DrawResultCard :state="demoState" :first-draw-available="firstDrawAvailable" />
+        <DrawResultCard :state="demoState" :first-draw-available="firstDrawAvailable" :activation-readiness="activationReadiness" />
       </div>
     </section>
 
