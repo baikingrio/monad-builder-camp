@@ -15,8 +15,10 @@ export interface DemoState {
   readonly connectedEoa?: string
   readonly authenticated: boolean
   readonly onMonadTestnet: boolean
-  /** Set only after a future verified Safe SDK/factory derivation. */
+  /** Set only after the authenticated owner is derived with the pinned Safe factory configuration. */
   readonly safeDerivationVerified: boolean
+  /** Purely derived from the authenticated owner and pinned Safe factory config. */
+  readonly counterfactualSafeAddress?: string
   /** True only after the activation UserOperation has been confirmed. */
   readonly safeDeployed: boolean
   readonly sponsorReady: boolean
@@ -29,7 +31,7 @@ export type DemoEvent =
   | { type: 'authenticated' }
   | { type: 'authenticationCleared' }
   | { type: 'monadTestnetChanged'; ready: boolean }
-  | { type: 'safeDerivationVerified' }
+  | { type: 'safeDerivationVerified'; address?: string }
   | { type: 'sponsorReadinessChanged'; ready: boolean }
   | { type: 'activationStarted' }
   | { type: 'activationSucceeded' }
@@ -110,6 +112,7 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
           connectedEoa: event.eoa,
           authenticated: false,
           safeDerivationVerified: false,
+          counterfactualSafeAddress: undefined,
           safeDeployed: false,
           sponsorReady: false
         })
@@ -124,6 +127,7 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
         ...state,
         authenticated: false,
         safeDerivationVerified: false,
+        counterfactualSafeAddress: undefined,
         sponsorReady: false
       })
     case 'monadTestnetChanged':
@@ -132,7 +136,7 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
       if (!state.walletConnected || !state.authenticated) {
         throw new Error('wallet connection and authentication are required before Safe derivation')
       }
-      return normalise({ ...state, safeDerivationVerified: true })
+      return normalise({ ...state, safeDerivationVerified: true, counterfactualSafeAddress: event.address })
     case 'sponsorReadinessChanged':
       if (event.ready && (!state.walletConnected || !state.authenticated || !state.safeDerivationVerified)) {
         throw new Error('verified wallet, authentication and Safe derivation are required before sponsor readiness')

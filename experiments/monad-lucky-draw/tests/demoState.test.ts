@@ -13,7 +13,7 @@ function activationReadyState() {
   state = transitionDemoState(state, { type: 'walletConnected', eoa: firstEoa })
   state = transitionDemoState(state, { type: 'authenticated' })
   state = transitionDemoState(state, { type: 'monadTestnetChanged', ready: true })
-  state = transitionDemoState(state, { type: 'safeDerivationVerified' })
+  state = transitionDemoState(state, { type: 'safeDerivationVerified', address: '0x3333333333333333333333333333333333333333' })
   return transitionDemoState(state, { type: 'sponsorReadinessChanged', ready: true })
 }
 

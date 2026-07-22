@@ -26,6 +26,20 @@ describe('Task4 状态分支的诚实文案', () => {
     expect(screen.getByText('Safe 已派生待部署；部署状态仍须由链上确认。')).toBeTruthy()
   })
 
+  it('only displays a derived address as counterfactual and not deployed', () => {
+    render(SafeStatusCard, {
+      props: {
+        state: stateWith({
+          status: 'safeDerived', authenticated: true, safeDerivationVerified: true,
+          counterfactualSafeAddress: '0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C'
+        })
+      }
+    })
+
+    expect(screen.getByText('反事实地址（未部署）')).toBeTruthy()
+    expect(screen.getByText('0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C')).toBeTruthy()
+  })
+
   it('已确认部署的 Safe 不会被描述为待部署', () => {
     render(SafeStatusCard, {
       props: {

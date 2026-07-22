@@ -4,6 +4,7 @@ import { createDemoState, isDrawAvailable, transitionDemoState } from '../lib/de
 import type { LoginSnapshot } from '../lib/eoaLogin'
 import { evaluateActivationReadiness } from '../lib/activationReadiness'
 import { MONAD_ACTIVATION_CONFIG } from '../lib/monadConfig'
+import { deriveMonadCounterfactualSafe } from '../lib/safeAddress'
 import WalletConnectionPanel from '../components/WalletConnectionPanel.vue'
 import SafeStatusCard from '../components/SafeStatusCard.vue'
 import DrawResultCard from '../components/DrawResultCard.vue'
@@ -23,7 +24,9 @@ function syncLogin(snapshot: LoginSnapshot) {
   }
   let next = transitionDemoState(createDemoState(), { type: 'walletConnected', eoa: snapshot.account })
   next = transitionDemoState(next, { type: 'monadTestnetChanged', ready: true })
-  demoState.value = transitionDemoState(next, { type: 'authenticated' })
+  next = transitionDemoState(next, { type: 'authenticated' })
+  const safe = deriveMonadCounterfactualSafe({ owner: snapshot.account, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n })
+  demoState.value = transitionDemoState(next, { type: 'safeDerivationVerified', address: safe.address })
 }
 </script>
 

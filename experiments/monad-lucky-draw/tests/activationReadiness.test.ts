@@ -34,12 +34,14 @@ function readyInput(overrides: Partial<ActivationReadinessInput> = {}): Activati
 
 describe('verified Monad activation configuration', () => {
   it('uses the verified chain, Safe factory, EntryPoint v0.7 and Lucky Draw addresses', () => {
-    expect(MONAD_ACTIVATION_CONFIG).toEqual({
+    expect(MONAD_ACTIVATION_CONFIG).toMatchObject({
       chainId: 10143,
       safeFactory: '0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67',
+      safeSingleton: '0x41675C099F32341bf84BFc5382aF534df5C7461a',
       entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
       luckyDraw: '0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70'
     })
+    expect(MONAD_ACTIVATION_CONFIG.safeProxyCreationCode).toMatch(/^0x[0-9a-f]+$/i)
   })
 
   it('rejects malformed, zero, or changed activation endpoints', () => {
