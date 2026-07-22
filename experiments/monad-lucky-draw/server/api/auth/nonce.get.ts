@@ -11,6 +11,7 @@ export default defineEventHandler((event) => {
     return {
       persistence: persistentStore.persistence,
       nonce: nonce.id,
+      issuedAt: new Date(nonce.issuedAt).toISOString(),
       expiresAt: new Date(nonce.expiresAt).toISOString(),
       message: buildCanonicalLoginMessage({ eoa: nonce.eoa, nonce: nonce.id, origin: nonce.origin, issuedAt: nonce.issuedAt, expiresAt: nonce.expiresAt })
     }

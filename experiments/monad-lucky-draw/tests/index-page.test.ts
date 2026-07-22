@@ -14,7 +14,7 @@ describe('Monad Lucky Draw 首页', () => {
 
     expect(screen.getByText('Monad Testnet')).toBeTruthy()
     expect(screen.getByText(/仅限测试网.*不涉及真实资产/)).toBeTruthy()
-    expect(screen.getAllByText(/界面预览.*尚未连接真实钱包/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/仅在点击.*后才会请求登录签名/)).toBeTruthy()
   })
 
   it('在激活前将派生 Safe 标示为未部署', () => {

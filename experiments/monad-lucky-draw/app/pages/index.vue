@@ -1,18 +1,30 @@
 <script setup lang="ts">
-import { createDemoState, isDrawAvailable } from '../lib/demoState'
+import { computed, ref } from 'vue'
+import { createDemoState, isDrawAvailable, transitionDemoState } from '../lib/demoState'
+import type { LoginSnapshot } from '../lib/eoaLogin'
 import { evaluateActivationReadiness } from '../lib/activationReadiness'
 import { MONAD_ACTIVATION_CONFIG } from '../lib/monadConfig'
 import WalletConnectionPanel from '../components/WalletConnectionPanel.vue'
 import SafeStatusCard from '../components/SafeStatusCard.vue'
 import DrawResultCard from '../components/DrawResultCard.vue'
 
-const demoState = createDemoState()
+const demoState = ref(createDemoState())
 const activationReadiness = evaluateActivationReadiness({
   config: MONAD_ACTIVATION_CONFIG,
   sponsorPolicy: { persistent: false, authorized: false },
   userClicked: false
 })
-const firstDrawAvailable = isDrawAvailable(demoState) && activationReadiness.canConstructUserOperation
+const firstDrawAvailable = computed(() => isDrawAvailable(demoState.value) && activationReadiness.canConstructUserOperation)
+
+function syncLogin(snapshot: LoginSnapshot) {
+  if (!snapshot.authenticated || !snapshot.account || snapshot.chainId !== 10143) {
+    demoState.value = createDemoState()
+    return
+  }
+  let next = transitionDemoState(createDemoState(), { type: 'walletConnected', eoa: snapshot.account })
+  next = transitionDemoState(next, { type: 'monadTestnetChanged', ready: true })
+  demoState.value = transitionDemoState(next, { type: 'authenticated' })
+}
 </script>
 
 <template>
@@ -22,7 +34,7 @@ const firstDrawAvailable = isDrawAvailable(demoState) && activationReadiness.can
       <h1 id="page-title">Monad Lucky Draw</h1>
       <p class="lead">一个围绕 EOA 绑定、反事实 Safe 与后续 Session Key 的学习型抽奖流程。</p>
       <div class="security-boundary" role="note" aria-label="安全边界">
-        <strong>安全边界：</strong>仅限测试网，不涉及真实资产。本版本是界面预览 / 尚未连接真实钱包；不会请求签名、发送交易或执行 UserOperation。
+        <strong>安全边界：</strong>仅限测试网，不涉及真实资产。仅在点击“连接钱包并登录”后才会请求登录签名；不会发送交易或执行 UserOperation。
       </div>
     </header>
 
@@ -32,7 +44,7 @@ const firstDrawAvailable = isDrawAvailable(demoState) && activationReadiness.can
         <h2 id="journey-title">先验证身份，再准备执行权限</h2>
       </div>
       <div class="cards">
-        <WalletConnectionPanel :state="demoState" />
+        <WalletConnectionPanel :state="demoState" @login-state="syncLogin" />
         <SafeStatusCard :state="demoState" />
         <DrawResultCard :state="demoState" :first-draw-available="firstDrawAvailable" :activation-readiness="activationReadiness" />
       </div>
