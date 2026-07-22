@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildLoginMessage } from '../app/lib/authMessage'
-import { createEoaLoginController, MONAD_TESTNET_CHAIN_ID, type Eip1193LoginProvider } from '../app/lib/eoaLogin'
+import {
+  createEoaLoginController,
+  MONAD_TESTNET_CHAIN_ID,
+  MONAD_TESTNET_CHAIN_ID_HEX,
+  type Eip1193LoginProvider
+} from '../app/lib/eoaLogin'
 
 const account = '0x1111111111111111111111111111111111111111'
 const origin = 'https://lucky-draw.example'
@@ -8,15 +13,16 @@ const nonce = 'nonce-7f6d6f9e-9f2e-4b42-a889-123456789abc'
 const issuedAt = '2026-07-22T10:00:00.000Z'
 const expiresAt = '2026-07-22T10:05:00.000Z'
 const message = buildLoginMessage({ eoa: account, nonce, origin, issuedAt, expiresAt }).text
+const monadHex = MONAD_TESTNET_CHAIN_ID_HEX
 
 function provider(overrides: Partial<Eip1193LoginProvider> = {}) {
   const listeners = new Map<string, (value: unknown) => void>()
   return {
     request: vi.fn(async ({ method }: { method: string }) => {
       if (method === 'eth_requestAccounts') return [account]
-      if (method === 'eth_chainId') return `0x${MONAD_TESTNET_CHAIN_ID.toString(16)}`
+      if (method === 'eth_chainId') return monadHex
       if (method === 'personal_sign') return `0x${'11'.repeat(65)}`
-      throw new Error('unexpected method')
+      throw new Error(`unexpected method: ${method}`)
     }),
     on: vi.fn((event: string, listener: (value: unknown) => void) => listeners.set(event, listener)),
     removeListener: vi.fn(),
@@ -54,9 +60,62 @@ describe('user-clicked browser EOA login', () => {
     expect(controller.snapshot).toMatchObject({ authenticated: true, account, chainId: MONAD_TESTNET_CHAIN_ID })
   })
 
+  it('switches to Monad Testnet when the wallet is on another chain', async () => {
+    let onMonad = false
+    const wallet = provider({
+      request: vi.fn(async ({ method }: { method: string }) => {
+        if (method === 'eth_requestAccounts') return [account]
+        if (method === 'eth_chainId') return onMonad ? monadHex : '0x1'
+        if (method === 'wallet_switchEthereumChain') {
+          onMonad = true
+          return null
+        }
+        if (method === 'personal_sign') return `0x${'11'.repeat(65)}`
+        throw new Error(`unexpected method: ${method}`)
+      })
+    })
+    const fetch = fetchSuccess()
+    const controller = createEoaLoginController({ provider: wallet, fetch, origin })
+
+    await controller.connectAndLogin()
+
+    expect(wallet.request).toHaveBeenCalledWith({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: monadHex }]
+    })
+    expect(controller.snapshot).toMatchObject({ authenticated: true, chainId: MONAD_TESTNET_CHAIN_ID })
+  })
+
+  it('adds Monad Testnet when switch returns unrecognized chain (4902)', async () => {
+    let onMonad = false
+    const wallet = provider({
+      request: vi.fn(async ({ method }: { method: string }) => {
+        if (method === 'eth_requestAccounts') return [account]
+        if (method === 'eth_chainId') return onMonad ? monadHex : '0x1'
+        if (method === 'wallet_switchEthereumChain') {
+          throw Object.assign(new Error('Unrecognized chain'), { code: 4902 })
+        }
+        if (method === 'wallet_addEthereumChain') {
+          onMonad = true
+          return null
+        }
+        if (method === 'personal_sign') return `0x${'11'.repeat(65)}`
+        throw new Error(`unexpected method: ${method}`)
+      })
+    })
+    const controller = createEoaLoginController({ provider: wallet, fetch: fetchSuccess(), origin })
+
+    await controller.connectAndLogin()
+
+    expect(wallet.request).toHaveBeenCalledWith({
+      method: 'wallet_addEthereumChain',
+      params: [expect.objectContaining({ chainId: monadHex, chainName: 'Monad Testnet' })]
+    })
+    expect(controller.snapshot.authenticated).toBe(true)
+  })
+
   it.each([
     ['missing provider', undefined as unknown as Eip1193LoginProvider],
-    ['wrong chain', provider({ request: vi.fn(async ({ method }: { method: string }) => method === 'eth_requestAccounts' ? [account] : '0x1') })],
     ['user rejection', provider({ request: vi.fn(async () => { throw Object.assign(new Error('rejected'), { code: 4001 }) }) })]
   ])('never authenticates on %s', async (_name, wallet) => {
     const fetch = fetchSuccess()
@@ -64,6 +123,25 @@ describe('user-clicked browser EOA login', () => {
     await controller.connectAndLogin()
     expect(controller.snapshot.authenticated).toBe(false)
     expect(fetch.mock.calls.length).toBe(0)
+  })
+
+  it('never authenticates when the user rejects the chain switch', async () => {
+    const wallet = provider({
+      request: vi.fn(async ({ method }: { method: string }) => {
+        if (method === 'eth_requestAccounts') return [account]
+        if (method === 'eth_chainId') return '0x1'
+        if (method === 'wallet_switchEthereumChain') {
+          throw Object.assign(new Error('rejected'), { code: 4001 })
+        }
+        throw new Error(`unexpected method: ${method}`)
+      })
+    })
+    const fetch = fetchSuccess()
+    const controller = createEoaLoginController({ provider: wallet, fetch, origin })
+    await controller.connectAndLogin()
+    expect(controller.snapshot.authenticated).toBe(false)
+    expect(controller.snapshot.error).toBe('用户取消了钱包请求')
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('clears the authenticated UI session when the wallet account or chain changes', async () => {

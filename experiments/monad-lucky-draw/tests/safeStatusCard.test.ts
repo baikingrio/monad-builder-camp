@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import SafeStatusCard from '../app/components/SafeStatusCard.vue'
 import { createDemoState, transitionDemoState } from '../app/lib/demoState'
 
-const SAFE = '0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C'
+const SAFE = '0x59cB895943D081a4b102aA22d19Eda1FabFD37d7'
 
 afterEach(cleanup)
 

@@ -29,9 +29,9 @@ async function loginWithWallet() { await controller?.connectAndLogin() }
     <dl class="status-list">
       <div><dt>钱包连接</dt><dd>{{ props.state.walletConnected ? '已连接' : '尚未连接' }}</dd></div>
       <div><dt>登录验证</dt><dd>{{ props.state.authenticated ? '已由服务器验证' : '未验证' }}</dd></div>
-      <div><dt>网络</dt><dd>{{ props.state.onMonadTestnet ? 'Monad Testnet 已验证' : '需要 Monad Testnet (10143)' }}</dd></div>
+      <div><dt>网络</dt><dd>{{ props.state.onMonadTestnet ? 'Monad Testnet 已验证' : '尚未切换到 Monad Testnet' }}</dd></div>
     </dl>
-    <p class="notice" role="note">此签名只用于 EOA 登录与账户绑定，不授权 Safe、UserOperation、交易、合约调用或转账。</p>
+    <p class="notice" role="note">此签名只用于 EOA 登录与账户绑定，不授权 Safe、UserOperation、交易、合约调用或转账。登录前请在钱包中选择 Monad Testnet（Chain ID 10143）。</p>
     <button type="button" :disabled="login.pending" @click="loginWithWallet">
       {{ login.pending ? '正在连接并验证…' : '连接钱包并登录' }}
     </button>

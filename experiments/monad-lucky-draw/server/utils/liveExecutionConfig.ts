@@ -1,7 +1,8 @@
 import { isAddress, type Address } from 'viem'
 
 const MONAD_TESTNET_CHAIN_ID = 10143 as const
-const PIMLICO_BASE_URL = `https://api.pimlico.io/v2/${MONAD_TESTNET_CHAIN_ID}/rpc`
+/** Dashboard slug + add_balance_override matches the working Monad Paymaster path. */
+const PIMLICO_BASE_URL = 'https://api.pimlico.io/v2/monad-testnet/rpc'
 
 export interface LiveExecutionConfigInput {
   readonly enabled: boolean
@@ -52,6 +53,6 @@ export function createLiveExecutionConfig(input: LiveExecutionConfigInput): Live
     maxGas,
     totalBudget,
     safe4337Module: input.safe4337Module as Address,
-    createBundlerUrl: () => `${PIMLICO_BASE_URL}?apikey=${encodeURIComponent(apiKey)}`
+    createBundlerUrl: () => `${PIMLICO_BASE_URL}?add_balance_override&apikey=${encodeURIComponent(apiKey)}`
   })
 }

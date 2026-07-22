@@ -1,17 +1,22 @@
 # Monad Lucky Draw
 
-Monad Testnet 上的独立账户抽象抽卡实验。目标是让用户用自己的 EOA 完成首次明确授权，获得可预测的 AA Safe 地址，并在受限 Sponsor 支持下完成一次抽卡。
+Monad Testnet 上的独立账户抽象抽卡实验。用户用自己的 EOA 完成首次明确授权，获得可预测的 AA Safe 地址，并在受限 Pimlico Paymaster 赞助下完成一次抽卡。
 
-> 当前状态：**仅完成架构与安全脚手架，尚未部署合约、尚未创建 Safe、尚未发送 UserOperation、尚未启用 Sponsor 或 Session Key。**
+> 当前状态：**抽卡合约已部署；Pimlico 赞助首次激活与 Session Key 免弹窗抽奖均已有公开 receipt。自建 Faucet 仍未实现。**
 
-## 计划中的体验
+## 体验路径
 
 1. 连接 EOA，并签署带 nonce 与过期时间的身份绑定消息；
-2. 推导对应的 counterfactual Safe 地址；
-3. 用户主动点击“激活并免费抽一次”，由一次性、固定 `draw()` 调用的 Sponsor policy 支持；
-4. 在真实链上授权和安全门槛完成后，为后续抽卡开放受限 Session Key，避免每次弹出钱包。
+2. 推导对应的 counterfactual Safe 地址（Safe 1.4.1 + Safe4337Module v0.3 / EntryPoint v0.7）；
+3. 用户主动检查 Safe 链上部署状态（只读 `eth_getCode`）；
+4. 用户点击「激活并免费抽一次」→ 服务端 Pimlico 赞助固定 `draw()` → 钱包签署 Owner UserOperation → 广播并等待 receipt；
+5. 用户点击「启用免弹窗抽奖」→ 浏览器生成 Session Key → **一次** Owner 授权 `addOwnerWithThreshold` → 之后「免弹窗抽奖」由 Session Key 本地签名；
+6. 仅在拿到公开 hash / receipt 后展示 MonadVision 链接。
 
-详细执行计划：[`docs/2026-07-22-implementation-plan.md`](./docs/2026-07-22-implementation-plan.md)。
+详细执行计划：[`docs/2026-07-22-implementation-plan.md`](./docs/2026-07-22-implementation-plan.md)。  
+Pimlico Sponsor 设计：[`docs/superpowers/specs/2026-07-22-pimlico-sponsor-activation-design.md`](./docs/superpowers/specs/2026-07-22-pimlico-sponsor-activation-design.md)。  
+Session Key 设计：[`docs/superpowers/specs/2026-07-22-session-key-draw-design.md`](./docs/superpowers/specs/2026-07-22-session-key-draw-design.md)。  
+链上 Proof：[`docs/onchain-proof.md`](./docs/onchain-proof.md)。
 
 ## 已验证的链上基础
 
@@ -20,16 +25,32 @@ Monad Testnet 上的独立账户抽象抽卡实验。目标是让用户用自己
 - 合约地址：[`0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70`](https://testnet.monadvision.com/address/0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70)
 - 部署交易：[`0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6`](https://testnet.monadvision.com/tx/0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6)
 
-它只证明抽卡合约已部署；EOA 登录、AA Safe、Sponsor、真实 UserOperation 和 Session Key 仍未完成。完整核查见 [`docs/onchain-proof.md`](./docs/onchain-proof.md)。
+首次赞助激活与免弹窗抽奖（示例）：
+
+- Safe：[`0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276`](https://testnet.monadvision.com/address/0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276)
+- 激活交易：[`0xfd3e1a879728595da7ce01fac221b91a0f9c25beeb1481f32420faab7245fc11`](https://testnet.monadvision.com/tx/0xfd3e1a879728595da7ce01fac221b91a0f9c25beeb1481f32420faab7245fc11)
+- 免弹窗抽奖：[`0x4d334a92634567482bd906afe4b2cccc325de152bd936ccb2641af9618dfb604`](https://testnet.monadvision.com/tx/0x4d334a92634567482bd906afe4b2cccc325de152bd936ccb2641af9618dfb604)
+
+## 启用 Sponsor（Pimlico）
+
+在 `.env` 中（参考 `.env.example`）：
+
+- `LUCKY_DRAW_SPONSOR_SIGNING_ENABLED=true`
+- `LUCKY_DRAW_SESSION_SECRET`（≥32 字符）
+- `LUCKY_DRAW_PIMLICO_API_KEY`（Dashboard 需启用 Monad）
+- `LUCKY_DRAW_SPONSOR_MAX_GAS` / `LUCKY_DRAW_SPONSOR_TOTAL_BUDGET`
+- `LUCKY_DRAW_SAFE_4337_MODULE=0x75cf11467937ce3F2f357CE24ffc3DBF8fD5c226`
+
+**不需要** `LUCKY_DRAW_SPONSOR_PRIVATE_KEY`（本 Demo 仅使用 Pimlico Paymaster）。
 
 ## 安全边界
 
 - 仅 Monad Testnet（Chain ID `10143`），不处理真实资产；
-- 浏览器绝不保存 Paymaster Key、Sponsor 私钥或运营钱包私钥；
-- Sponsor 默认关闭；在持久化资格记录、限流、预算、审计和熔断器完成前，不得对公网启用；
-- 登录签名只用于身份绑定，不等同于链上 AA 授权；
-- 后续“免钱包弹窗”只允许在链上确认的 Session Key 权限范围内调用固定抽卡函数；
-- 当前“领取测试 MON”仅计划提供官方 Faucet 链接；自建 Faucet 需独立安全 Gate。
+- 浏览器绝不保存 Paymaster Key 或运营私钥；
+- Sponsor 默认应视为需显式开启；资格记录、限流、预算与熔断器在服务端执行；
+- 登录签名只用于身份绑定，不等同于链上 AA Owner 授权；
+- Session Key 作为 Safe owner（threshold=1）密码学权限较宽；Demo 依赖短 TTL、次数上限与服务端只允许 `draw()`；
+- 当前「领取测试 MON」仅提供官方 Faucet 说明；自建 Faucet 需独立安全 Gate。
 
 ## 初始化后运行
 
@@ -38,10 +59,7 @@ cd experiments/monad-lucky-draw
 cp .env.example .env
 npm install
 npm test
-npm run build
-
-cd contracts
-forge test
+npm run dev
 ```
 
 不要提交 `.env`、私钥、Pimlico Key、Foundry broadcast / cache 或任何生产凭证。

@@ -16,7 +16,7 @@ const deploymentExplanation = computed(() => ({
   unknown: 'Safe 地址派生不等于部署。请在已认证且完成地址派生后，点击按钮发起一次只读 eth_getCode 检查。',
   deployed: 'eth_getCode 返回了非空代码。这是只读结果，不代表本页面发送过交易或 UserOperation。',
   'not-deployed': 'eth_getCode 返回 0x；这是只读结果，不代表本页面执行过部署、交易或 UserOperation。',
-  unavailable: '本次 eth_getCode 读取失败，无法作出部署判断；本页面没有发送交易或 UserOperation。'
+  unavailable: '服务端读取 Monad Testnet eth_getCode 失败。请确认网络可达、NUXT_PUBLIC_MONAD_RPC_URL 正确，然后重试。'
 }[props.state.safeDeploymentStatus]))
 </script>
 

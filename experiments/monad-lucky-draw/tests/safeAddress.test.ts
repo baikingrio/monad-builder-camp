@@ -9,7 +9,7 @@ describe('Monad counterfactual Safe derivation', () => {
     const first = deriveMonadCounterfactualSafe({ owner: OWNER, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n })
     const repeated = deriveMonadCounterfactualSafe({ owner: OWNER, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n })
 
-    expect(first.address).toBe('0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C')
+    expect(first.address).toBe('0x59cB895943D081a4b102aA22d19Eda1FabFD37d7')
     expect(repeated).toEqual(first)
     expect(first.owner).toBe(OWNER)
     expect(first.threshold).toBe(1)

@@ -1,18 +1,8 @@
-import { sponsorReadiness } from '../../utils/runtime'
-import { persistentStore } from '../../utils/sqliteStore'
+import { resolveSponsorGates } from '../../utils/sponsorGates'
 
-/** Task 5 deliberately never creates a Paymaster/Sponsor authorization or a signature. */
+/** Legacy endpoint: readiness only; never returns a Paymaster credential or private key. */
 export default defineEventHandler(() => {
   const config = useRuntimeConfig()
-  const readiness = sponsorReadiness({
-    enabled: config.luckyDrawSponsorSigningEnabled === true,
-    persistentStore: persistentStore.persistence === 'persistent',
-    sessionSecret: config.luckyDrawSessionSecret,
-    signingKey: config.luckyDrawSponsorPrivateKey,
-    paymasterConfig: config.luckyDrawPimlicoApiKey,
-    target: config.public.luckyDrawContractAddress,
-    budgetAvailable: false,
-    circuitBreakerAvailable: false
-  })
+  const { readiness } = resolveSponsorGates(config)
   return { ...readiness, authorization: null }
 })

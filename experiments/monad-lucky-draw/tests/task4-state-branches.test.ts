@@ -31,13 +31,13 @@ describe('Task4 状态分支的诚实文案', () => {
       props: {
         state: stateWith({
           status: 'safeDerived', authenticated: true, safeDerivationVerified: true,
-          counterfactualSafeAddress: '0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C'
+          counterfactualSafeAddress: '0x59cB895943D081a4b102aA22d19Eda1FabFD37d7'
         })
       }
     })
 
     expect(screen.getByText('反事实 Safe 地址')).toBeTruthy()
-    expect(screen.getByText('0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C')).toBeTruthy()
+    expect(screen.getByText('0x59cB895943D081a4b102aA22d19Eda1FabFD37d7')).toBeTruthy()
   })
 
   it('不会从旧的 UI state 推断 Safe 已部署', () => {
@@ -56,29 +56,31 @@ describe('Task4 状态分支的诚实文案', () => {
     expect(screen.queryByText('已部署（链上只读检查）')).toBeNull()
   })
 
-  it('首次抽奖前置条件就绪时仍禁用模拟预览按钮，并说明不会执行', () => {
+  it('Sponsor 未启用时禁用激活按钮，并区分登录与链上授权', () => {
     render(DrawResultCard, {
       props: {
-        state: stateWith({ status: 'activationReady' }),
-        firstDrawAvailable: true
+        state: stateWith({ status: 'activationReady', authenticated: true, safeDerivationVerified: true, safeDeploymentStatus: 'not-deployed', onMonadTestnet: true }),
+        firstDrawAvailable: true,
+        sponsorEnabled: false
       }
     })
 
-    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /激活并免费抽一次/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
+    expect(screen.getByText(/登录签名不等于链上 AA 授权/)).toBeTruthy()
   })
 
-  it('首次抽奖前置条件未就绪时，同样禁用模拟预览按钮并如实说明限制', () => {
+  it('前置条件未齐时禁用激活按钮', () => {
     render(DrawResultCard, {
       props: {
         state: stateWith({ status: 'safeDerived' }),
-        firstDrawAvailable: false
+        firstDrawAvailable: false,
+        sponsorEnabled: true
       }
     })
 
-    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /激活并免费抽一次/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
+    expect(screen.getByText(/不会在未点击时请求签名或广播/)).toBeTruthy()
   })
 })

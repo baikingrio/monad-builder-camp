@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Hex } from 'viem'
+import type { Hex } from 'viem'
 import type { EthereumAddress } from './authMessage'
 
 /** The only network accepted for this read-only deployment lookup. */
@@ -12,7 +12,7 @@ export const MONAD_TESTNET_CHAIN = Object.freeze({
 export type SafeDeploymentStatus =
   | Readonly<{ kind: 'deployed'; chainId: 10143 }>
   | Readonly<{ kind: 'not-deployed'; chainId: 10143 }>
-  | Readonly<{ kind: 'unavailable'; chainId: 10143 }>
+  | Readonly<{ kind: 'unavailable'; chainId: 10143; reason?: string }>
 
 /** Injectable eth_getCode boundary; callers cannot provide a different chain target. */
 export type MonadGetCode = (request: Readonly<{
@@ -31,21 +31,38 @@ export async function checkMonadSafeDeploymentStatus(address: string, getCode: M
 
   try {
     const code = await getCode({ address: address as EthereumAddress, chain: MONAD_TESTNET_CHAIN })
-    if (code === '0x') return { kind: 'not-deployed', chainId: 10143 }
+    // Viem may return '0x' or undefined for accounts with no bytecode.
+    if (!code || code === '0x') return { kind: 'not-deployed', chainId: 10143 }
     if (typeof code === 'string' && code.length > 2) return { kind: 'deployed', chainId: 10143 }
-    return { kind: 'unavailable', chainId: 10143 }
-  } catch {
-    return { kind: 'unavailable', chainId: 10143 }
+    return { kind: 'unavailable', chainId: 10143, reason: 'empty-response' }
+  } catch (error) {
+    return {
+      kind: 'unavailable',
+      chainId: 10143,
+      reason: error instanceof Error ? error.message : 'rpc-failed'
+    }
   }
 }
 
-// Creating a viem client is inert: it does not make an RPC request. getCode is
-// called only from getMonadSafeDeploymentStatus, which the page invokes on click.
-const monadPublicClient = createPublicClient({
-  chain: MONAD_TESTNET_CHAIN,
-  transport: http(MONAD_TESTNET_CHAIN.rpcUrls.default.http[0])
-})
-
-export function getMonadSafeDeploymentStatus(address: string): Promise<SafeDeploymentStatus> {
-  return checkMonadSafeDeploymentStatus(address, async ({ address: safeAddress }) => monadPublicClient.getCode({ address: safeAddress }))
+/**
+ * Browser entry: asks the Nuxt server to perform eth_getCode so the page never
+ * depends on public-RPC CORS from the user's Origin.
+ */
+export async function getMonadSafeDeploymentStatus(address: string): Promise<SafeDeploymentStatus> {
+  if (!ETHEREUM_ADDRESS.test(address)) throw new Error('Safe address must be a 20-byte Ethereum address')
+  try {
+    const response = await $fetch<SafeDeploymentStatus>('/api/draw/safe-deployment', {
+      query: { address }
+    })
+    if (response?.kind === 'deployed' || response?.kind === 'not-deployed' || response?.kind === 'unavailable') {
+      return response
+    }
+    return { kind: 'unavailable', chainId: 10143, reason: 'invalid-server-response' }
+  } catch (error) {
+    return {
+      kind: 'unavailable',
+      chainId: 10143,
+      reason: error instanceof Error ? error.message : 'rpc-failed'
+    }
+  }
 }

@@ -4,26 +4,32 @@ export interface SponsorRuntimeInput {
   enabled: boolean
   persistentStore: boolean
   sessionSecret: string
-  signingKey: string
+  /** Pimlico API key or equivalent paymaster credential — never returned in responses. */
   paymasterConfig: string
   target: string
   budgetAvailable: boolean
   circuitBreakerAvailable: boolean
 }
-export interface SponsorReadiness { enabled: false; state: 'disabled'; persistence: PersistenceKind; missing: string[] }
 
-/** Fail closed by design: signing is intentionally not implemented for Task 5. */
+export type SponsorReadiness =
+  | { enabled: true; state: 'ready'; persistence: PersistenceKind; missing: readonly [] }
+  | { enabled: false; state: 'disabled'; persistence: PersistenceKind; missing: string[] }
+
+/** Fail closed unless every production gate is present. Pimlico paymaster replaces a private sponsor key. */
 export function sponsorReadiness(input: SponsorRuntimeInput): SponsorReadiness {
   const missing = [
     !input.enabled && 'explicit-enabled-flag',
     !input.persistentStore && 'persistent-storage',
-    !input.sessionSecret && 'session-secret',
-    !input.signingKey && 'signing-key',
+    input.sessionSecret.length < 32 && 'session-secret',
     !input.paymasterConfig && 'paymaster-config',
     !input.target && 'target-config',
     !input.budgetAvailable && 'budget',
-    !input.circuitBreakerAvailable && 'circuit-breaker',
-    'non-signing-task-boundary'
+    !input.circuitBreakerAvailable && 'circuit-breaker'
   ].filter((value): value is string => Boolean(value))
-  return { enabled: false, state: 'disabled', persistence: input.persistentStore ? 'persistent' : 'development-only', missing }
+
+  const persistence: PersistenceKind = input.persistentStore ? 'persistent' : 'development-only'
+  if (missing.length > 0) {
+    return { enabled: false, state: 'disabled', persistence, missing }
+  }
+  return { enabled: true, state: 'ready', persistence: 'persistent', missing: [] }
 }

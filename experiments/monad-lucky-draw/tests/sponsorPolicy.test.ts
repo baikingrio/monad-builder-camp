@@ -94,10 +94,34 @@ describe('development-only state and disabled runtime', () => {
   })
 
   it('keeps sponsor unavailable unless every production gate exists and leaks no secrets', () => {
-    const readiness = sponsorReadiness({ enabled: false, persistentStore: false, sessionSecret: '', signingKey: 'private-key', paymasterConfig: 'credential', target: TARGET, budgetAvailable: false, circuitBreakerAvailable: false })
-    expect(readiness).toMatchObject({ enabled: false, persistence: 'development-only' })
-    expect(JSON.stringify(readiness)).not.toContain('private-key')
+    const readiness = sponsorReadiness({
+      enabled: false,
+      persistentStore: false,
+      sessionSecret: '',
+      paymasterConfig: 'credential',
+      target: TARGET,
+      budgetAvailable: false,
+      circuitBreakerAvailable: false
+    })
+    expect(readiness).toMatchObject({ enabled: false, state: 'disabled', persistence: 'development-only' })
+    expect(readiness.missing).toContain('explicit-enabled-flag')
+    expect(readiness.missing).not.toContain('signing-key')
+    expect(readiness.missing).not.toContain('non-signing-task-boundary')
     expect(JSON.stringify(readiness)).not.toContain('credential')
     expect(JSON.stringify(readiness)).not.toContain('"sessionSecret"')
+  })
+
+  it('enables Pimlico sponsor readiness when gates are complete without a private key', () => {
+    const readiness = sponsorReadiness({
+      enabled: true,
+      persistentStore: true,
+      sessionSecret: 'a'.repeat(32),
+      paymasterConfig: 'pim_test_key',
+      target: TARGET,
+      budgetAvailable: true,
+      circuitBreakerAvailable: true
+    })
+    expect(readiness).toMatchObject({ enabled: true, state: 'ready', persistence: 'persistent', missing: [] })
+    expect(JSON.stringify(readiness)).not.toContain('pim_test_key')
   })
 })

@@ -42,6 +42,7 @@ const SAFE_SETUP_ABI = [{ type: 'function', name: 'setup', stateMutability: 'non
   { name: '_owners', type: 'address[]' }, { name: '_threshold', type: 'uint256' }, { name: 'to', type: 'address' }, { name: 'data', type: 'bytes' },
   { name: 'fallbackHandler', type: 'address' }, { name: 'paymentToken', type: 'address' }, { name: 'payment', type: 'uint256' }, { name: 'paymentReceiver', type: 'address' }
 ], outputs: [] }] as const
+const ENABLE_MODULES_ABI = [{ type: 'function', name: 'enableModules', stateMutability: 'nonpayable', inputs: [{ name: 'modules', type: 'address[]' }], outputs: [] }] as const
 const EMPTY_ADDRESS = ZERO_ADDRESS as Address
 
 /** Exact SafeProxyFactory createProxyWithNonce CREATE2 calculation. */
@@ -53,11 +54,29 @@ export function deriveSafeCreate2Address(input: { factory: string; proxyCreation
   return getAddress(getCreate2Address({ from: request.factory as Address, salt, bytecodeHash })) as EthereumAddress
 }
 
-/** Pure, offline Safe 1.4.1 derivation for exactly one authenticated EOA owner. */
+/** Pure offline Safe 1.4.1 + Safe4337Module setup for one authenticated EOA owner. */
 export function deriveMonadCounterfactualSafe(input: { owner: string; config: MonadActivationConfig; saltNonce?: string | bigint }): CounterfactualSafe {
   const config = createMonadActivationConfig(input.config)
   const request = createSafeDerivationRequest({ owner: input.owner, factory: config.safeFactory, saltNonce: input.saltNonce ?? 0n })
-  const initializer = encodeFunctionData({ abi: SAFE_SETUP_ABI, functionName: 'setup', args: [[request.owner as Address], 1n, EMPTY_ADDRESS, '0x', EMPTY_ADDRESS, EMPTY_ADDRESS, 0n, EMPTY_ADDRESS] })
+  const enableModulesData = encodeFunctionData({
+    abi: ENABLE_MODULES_ABI,
+    functionName: 'enableModules',
+    args: [[config.safe4337Module as Address]]
+  })
+  const initializer = encodeFunctionData({
+    abi: SAFE_SETUP_ABI,
+    functionName: 'setup',
+    args: [
+      [request.owner as Address],
+      1n,
+      config.safeModuleSetup as Address,
+      enableModulesData,
+      config.safe4337Module as Address,
+      EMPTY_ADDRESS,
+      0n,
+      EMPTY_ADDRESS
+    ]
+  })
   return Object.freeze({
     kind: 'counterfactual-safe',
     address: deriveSafeCreate2Address({ factory: config.safeFactory, proxyCreationCode: config.safeProxyCreationCode, singleton: config.safeSingleton, initializer, saltNonce: request.saltNonce }),

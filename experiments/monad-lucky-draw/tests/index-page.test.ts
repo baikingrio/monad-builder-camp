@@ -1,6 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import IndexPage from '../app/pages/index.vue'
+
+vi.mock('#app', () => ({}))
 
 afterEach(cleanup)
 
@@ -25,28 +27,30 @@ describe('Monad Lucky Draw 首页', () => {
     expect(screen.getByText(/Safe 地址派生不等于部署/)).toBeTruthy()
   })
 
-  it('禁用模拟激活并抽卡预览，并明确不签名或发送', () => {
+  it('在 Sponsor 未就绪或 Safe 未确认前禁用激活按钮，并区分登录与链上授权', () => {
     renderPage()
 
-    const button = screen.getByRole('button', { name: /模拟激活并抽卡/ }) as HTMLButtonElement
+    const button = screen.getByRole('button', { name: /激活并免费抽一次/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
-    expect(screen.getByText(/此预览不签名、不发送、不部署 Safe，也不会联系 Bundler 或 Sponsor/)).toBeTruthy()
-    expect(screen.getByText(/真实激活仍已禁用.*不会请求签名、调用 Bundler 或广播 UserOperation/)).toBeTruthy()
+    expect(screen.getByText(/登录签名不等于链上 AA 授权/)).toBeTruthy()
+    expect(screen.getByText(/不会在未点击时请求签名或广播/)).toBeTruthy()
   })
 
-  it('不展示 UserOperation、交易哈希成功文本或任何成功链接', () => {
+  it('初始不展示 UserOperation 成功或 MonadVision 成功链接', () => {
     const { container } = renderPage()
 
-    expect(screen.queryByText(/UserOperation 成功|交易已确认|交易哈希：/)).toBeNull()
+    expect(screen.queryByText(/首次激活抽卡已上链确认/)).toBeNull()
     expect(container.querySelector('a[href*="monadvision"]')).toBeNull()
   })
 
-  it('在 Session Key 链上授权前禁用后续免弹窗抽奖', () => {
+  it('在 Session Key 链上授权前禁用免弹窗抽奖，并提供启用入口', () => {
     renderPage()
 
-    const button = screen.getByRole('button', { name: /免弹窗抽奖/ }) as HTMLButtonElement
-    expect(button.disabled).toBe(true)
-    expect(screen.getByText(/需要 Session Key 链上授权；当前未实现/)).toBeTruthy()
+    const draw = screen.getByRole('button', { name: /^免弹窗抽奖$/ }) as HTMLButtonElement
+    const enable = screen.getByRole('button', { name: /启用免弹窗抽奖/ }) as HTMLButtonElement
+    expect(draw.disabled).toBe(true)
+    expect(enable.disabled).toBe(true)
+    expect(screen.getByText(/Session Key 在链上是 Safe owner/)).toBeTruthy()
   })
 
   it('清楚区分官方水龙头与本应用，不提供自建领币', () => {

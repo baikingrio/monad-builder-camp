@@ -2,34 +2,34 @@
 
 ## 已完成的真实链上内容
 
+### 抽卡合约
+
 - 网络：Monad Testnet（Chain ID `10143`）
 - 合约：`MonadLuckyDraw`
 - 合约地址：[`0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70`](https://testnet.monadvision.com/address/0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70)
 - 部署交易：[`0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6`](https://testnet.monadvision.com/tx/0x87a0966b743ee749b7af9e1fd7cbe6b8d8e04c6e454ed6a42592dfadba9d7ee6)
-- 部署者：`0x7c0343c808B827e4286381c2292d92c3f19152a4`
 
-## 本次验证
+### 首次赞助激活 + 抽卡（2026-07-22）
 
-- 部署交易 receipt status：`true`；
-- 合约地址返回非空 bytecode；
-- 部署者的初始 `drawCount`：`0`；
-- 本地 Foundry 测试：`4 / 4` 通过。
+- Safe：[`0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276`](https://testnet.monadvision.com/address/0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276)
+- UserOperation：`0x6575bac739c97acd2ffb1466fec690c67e260fa89d891bc3f14d2b43ddfff93e`
+- 交易：[`0xfd3e1a879728595da7ce01fac221b91a0f9c25beeb1481f32420faab7245fc11`](https://testnet.monadvision.com/tx/0xfd3e1a879728595da7ce01fac221b91a0f9c25beeb1481f32420faab7245fc11)
+- Owner / 部署者：`0x7c0343c808B827e4286381c2292d92c3f19152a4`
 
-## 合约行为与限制
+### Session Key 免弹窗抽奖（2026-07-22）
 
-`draw()` 会记录调用者的抽卡次数，并发出 `CardDrawn` 事件。它不能接收 MON，也没有管理员、Token、NFT、转账或任意外部调用能力。
+- Safe：[`0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276`](https://testnet.monadvision.com/address/0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276)
+- 交易：[`0x4d334a92634567482bd906afe4b2cccc325de152bd936ccb2641af9618dfb604`](https://testnet.monadvision.com/tx/0x4d334a92634567482bd906afe4b2cccc325de152bd936ccb2641af9618dfb604)
+- 说明：Session Key 本地签名 + Pimlico 赞助，无钱包弹窗
 
-卡牌稀有度来自调用者、抽卡次数和 `block.prevrandao` 的伪随机计算。该随机性可被操纵，仅用于 Demo，不是生产级随机数。
+## 产品能力状态
 
-## 尚未完成的产品能力
+- [x] EOA 登录绑定
+- [x] Counterfactual Safe 派生与链上部署检查
+- [x] Pimlico 赞助首次激活抽卡（有公开 receipt）
+- [x] Session Key 免弹窗抽奖（有公开 receipt）
+- [ ] 自建 Demo Faucet
 
-当前真实部署的是抽卡合约，不代表以下路径已经完成：
+## Session Key 说明
 
-- EOA 登录签名的浏览器接入；
-- Counterfactual Safe 的真实派生与部署；
-- 一次性 Paymaster Sponsor；
-- 真实 AA UserOperation 抽卡；
-- Session Key 免钱包弹窗抽卡；
-- 项目方 Demo Faucet。
-
-这些能力依赖服务端持久化资格记录、限流、预算、熔断器、真实签名验证、Safe / EntryPoint 兼容性与可用的 Monad Paymaster 配置。当前 Sponsor API 按设计保持关闭，不会伪造成功状态。
+启用免弹窗会把浏览器生成的 Session Key 通过一次 Owner UserOp `addOwnerWithThreshold` 加入 Safe。后续抽奖由 Session Key 本地签名，服务端强制仅 `LuckyDraw.draw()`、value=0、次数与过期。链上 Session Key 作为 owner（threshold=1）密码学权限较宽，仅适合测试网 Demo。

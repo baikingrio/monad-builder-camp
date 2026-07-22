@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { MONAD_TESTNET_CHAIN, checkMonadSafeDeploymentStatus } from '../app/lib/safeDeploymentStatus'
 
-const SAFE = '0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C'
+const SAFE = '0x59cB895943D081a4b102aA22d19Eda1FabFD37d7'
 
 describe('read-only Monad Safe deployment status', () => {
   it('reports deployed only when eth_getCode returns nonempty bytecode', async () => {
@@ -17,10 +17,10 @@ describe('read-only Monad Safe deployment status', () => {
   })
 
   it('does not treat an absent or otherwise non-code response as deployed', async () => {
-    await expect(checkMonadSafeDeploymentStatus(SAFE, vi.fn().mockResolvedValue(undefined))).resolves.toEqual({ kind: 'unavailable', chainId: 10143 })
+    await expect(checkMonadSafeDeploymentStatus(SAFE, vi.fn().mockResolvedValue(undefined))).resolves.toMatchObject({ kind: 'not-deployed', chainId: 10143 })
   })
 
   it('reports unavailable when the RPC read fails', async () => {
-    await expect(checkMonadSafeDeploymentStatus(SAFE, vi.fn().mockRejectedValue(new Error('RPC unavailable')))).resolves.toEqual({ kind: 'unavailable', chainId: 10143 })
+    await expect(checkMonadSafeDeploymentStatus(SAFE, vi.fn().mockRejectedValue(new Error('RPC unavailable')))).resolves.toMatchObject({ kind: 'unavailable', chainId: 10143 })
   })
 })
