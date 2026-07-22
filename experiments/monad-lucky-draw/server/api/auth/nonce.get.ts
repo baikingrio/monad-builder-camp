@@ -1,5 +1,5 @@
 import { buildCanonicalLoginMessage } from '../../utils/auth'
-import { developmentStore } from '../../utils/store'
+import { persistentStore } from '../../utils/sqliteStore'
 
 export default defineEventHandler((event) => {
   const query = getQuery(event)
@@ -7,12 +7,12 @@ export default defineEventHandler((event) => {
   const origin = typeof query.origin === 'string' ? query.origin : ''
   const now = Date.now()
   try {
-    const nonce = developmentStore.issueNonce({ eoa, origin, now, ttlMs: 5 * 60_000 })
+    const nonce = persistentStore.issueNonce({ eoa, origin, now, ttlMs: 5 * 60_000 })
     return {
-      persistence: 'development-only' as const,
+      persistence: persistentStore.persistence,
       nonce: nonce.id,
       expiresAt: new Date(nonce.expiresAt).toISOString(),
-      message: buildCanonicalLoginMessage({ eoa, nonce: nonce.id, origin, issuedAt: now, expiresAt: nonce.expiresAt })
+      message: buildCanonicalLoginMessage({ eoa: nonce.eoa, nonce: nonce.id, origin: nonce.origin, issuedAt: nonce.issuedAt, expiresAt: nonce.expiresAt })
     }
   } catch {
     throw createError({ statusCode: 400, statusMessage: 'invalid login request' })

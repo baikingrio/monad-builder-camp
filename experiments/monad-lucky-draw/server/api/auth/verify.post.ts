@@ -1,14 +1,15 @@
-import { buildCanonicalLoginMessage, verifyLoginBoundary } from '../../utils/auth'
-import { developmentStore } from '../../utils/store'
+import { verifyEoaLogin } from '../../utils/auth'
+import { persistentStore } from '../../utils/sqliteStore'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ eoa?: string; origin?: string; nonce?: string; message?: string; signature?: string }>(event)
   const now = Date.now()
-  const nonce = typeof body?.nonce === 'string' ? developmentStore.consumeNonce(body.nonce, now) : undefined
-  if (!nonce || body?.eoa !== nonce.eoa || body?.origin !== nonce.origin) {
-    return { authenticated: false, reason: 'invalid-or-used-nonce', persistence: 'development-only' as const }
-  }
-  const canonicalMessage = buildCanonicalLoginMessage({ eoa: nonce.eoa, nonce: nonce.id, origin: nonce.origin, issuedAt: nonce.expiresAt - 5 * 60_000, expiresAt: nonce.expiresAt })
-  const verification = verifyLoginBoundary({ canonicalMessage, suppliedMessage: body.message ?? '', signature: body.signature ?? '', cryptographicallyVerified: false })
-  return { ...verification, persistence: 'development-only' as const }
+  return verifyEoaLogin(persistentStore, {
+    eoa: typeof body?.eoa === 'string' ? body.eoa : '',
+    origin: typeof body?.origin === 'string' ? body.origin : '',
+    nonce: typeof body?.nonce === 'string' ? body.nonce : '',
+    message: typeof body?.message === 'string' ? body.message : '',
+    signature: typeof body?.signature === 'string' ? body.signature : '',
+    now
+  })
 })

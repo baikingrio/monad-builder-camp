@@ -2,6 +2,10 @@ node_modules/
 .nuxt/
 .output/
 .env
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 coverage/
 contracts/broadcast/
 contracts/cache/

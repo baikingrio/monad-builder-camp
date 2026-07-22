@@ -25,5 +25,5 @@ export function sponsorReadiness(input: SponsorRuntimeInput): SponsorReadiness {
     !input.circuitBreakerAvailable && 'circuit-breaker',
     'non-signing-task-boundary'
   ].filter((value): value is string => Boolean(value))
-  return { enabled: false, state: 'disabled', persistence: 'development-only', missing }
+  return { enabled: false, state: 'disabled', persistence: input.persistentStore ? 'persistent' : 'development-only', missing }
 }

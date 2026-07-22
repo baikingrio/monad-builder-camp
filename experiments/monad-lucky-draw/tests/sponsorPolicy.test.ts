@@ -74,7 +74,7 @@ describe('authentication boundary', () => {
   it('creates an exact canonical login message and consumes nonce once', () => {
     const message = buildCanonicalLoginMessage({ eoa: EOA, nonce: 'nonce-000000000001', origin: 'https://draw.example', issuedAt: NOW, expiresAt: NOW + 60_000 })
     expect(message).toContain('Monad Lucky Draw EOA Login')
-    expect(verifyLoginBoundary({ canonicalMessage: message, suppliedMessage: message, signature: '0xdeadbeef', cryptographicallyVerified: false })).toEqual({ authenticated: false, reason: 'signature-verification-unavailable' })
+    expect(verifyLoginBoundary({ canonicalMessage: message, suppliedMessage: message, signature: '0xdeadbeef', cryptographicallyVerified: false })).toMatchObject({ authenticated: false, reason: 'invalid-signature' })
   })
 
   it('rejects a tampered canonical message and never accepts unsigned proof', () => {
