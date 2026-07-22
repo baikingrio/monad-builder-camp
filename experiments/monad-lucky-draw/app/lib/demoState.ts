@@ -19,6 +19,8 @@ export interface DemoState {
   readonly safeDerivationVerified: boolean
   /** Purely derived from the authenticated owner and pinned Safe factory config. */
   readonly counterfactualSafeAddress?: string
+  /** Unknown until the user explicitly requests a read-only eth_getCode lookup. */
+  readonly safeDeploymentStatus: 'unknown' | 'deployed' | 'not-deployed' | 'unavailable'
   /** True only after the activation UserOperation has been confirmed. */
   readonly safeDeployed: boolean
   readonly sponsorReady: boolean
@@ -32,6 +34,7 @@ export type DemoEvent =
   | { type: 'authenticationCleared' }
   | { type: 'monadTestnetChanged'; ready: boolean }
   | { type: 'safeDerivationVerified'; address?: string }
+  | { type: 'safeDeploymentStatusChecked'; status: 'deployed' | 'not-deployed' | 'unavailable' }
   | { type: 'sponsorReadinessChanged'; ready: boolean }
   | { type: 'activationStarted' }
   | { type: 'activationSucceeded' }
@@ -44,6 +47,7 @@ export function createDemoState(): DemoState {
     authenticated: false,
     onMonadTestnet: false,
     safeDerivationVerified: false,
+    safeDeploymentStatus: 'unknown',
     safeDeployed: false,
     sponsorReady: false
   }
@@ -113,6 +117,7 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
           authenticated: false,
           safeDerivationVerified: false,
           counterfactualSafeAddress: undefined,
+          safeDeploymentStatus: 'unknown',
           safeDeployed: false,
           sponsorReady: false
         })
@@ -128,6 +133,7 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
         authenticated: false,
         safeDerivationVerified: false,
         counterfactualSafeAddress: undefined,
+        safeDeploymentStatus: 'unknown',
         sponsorReady: false
       })
     case 'monadTestnetChanged':
@@ -136,7 +142,12 @@ export function transitionDemoState(state: DemoState, event: DemoEvent): DemoSta
       if (!state.walletConnected || !state.authenticated) {
         throw new Error('wallet connection and authentication are required before Safe derivation')
       }
-      return normalise({ ...state, safeDerivationVerified: true, counterfactualSafeAddress: event.address })
+      return normalise({ ...state, safeDerivationVerified: true, counterfactualSafeAddress: event.address, safeDeploymentStatus: 'unknown' })
+    case 'safeDeploymentStatusChecked':
+      if (!state.authenticated || !state.safeDerivationVerified || !state.counterfactualSafeAddress) {
+        throw new Error('an authenticated derived Safe is required before checking deployment status')
+      }
+      return normalise({ ...state, safeDeploymentStatus: event.status, safeDeployed: event.status === 'deployed' })
     case 'sponsorReadinessChanged':
       if (event.ready && (!state.walletConnected || !state.authenticated || !state.safeDerivationVerified)) {
         throw new Error('verified wallet, authentication and Safe derivation are required before sponsor readiness')

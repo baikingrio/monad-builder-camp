@@ -11,7 +11,7 @@ function stateWith(overrides: Partial<DemoState>): DemoState {
 }
 
 describe('Task4 状态分支的诚实文案', () => {
-  it('验证已派生但尚未部署的 Safe 时，明确说明仍待链上部署确认', () => {
+  it('已派生 Safe 在用户检查前不作部署声明', () => {
     render(SafeStatusCard, {
       props: {
         state: stateWith({
@@ -22,11 +22,11 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    expect(screen.getByText('未部署')).toBeTruthy()
-    expect(screen.getByText('Safe 已派生待部署；部署状态仍须由链上确认。')).toBeTruthy()
+    expect(screen.getByText('未知（尚未检查）')).toBeTruthy()
+    expect(screen.getByText(/Safe 地址派生不等于部署/)).toBeTruthy()
   })
 
-  it('only displays a derived address as counterfactual and not deployed', () => {
+  it('only displays a derived address as counterfactual without a deployment claim', () => {
     render(SafeStatusCard, {
       props: {
         state: stateWith({
@@ -36,11 +36,11 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    expect(screen.getByText('反事实地址（未部署）')).toBeTruthy()
+    expect(screen.getByText('反事实 Safe 地址')).toBeTruthy()
     expect(screen.getByText('0x7B230f5FcE1f5A2912759C6339C9Dc5fdb3f427C')).toBeTruthy()
   })
 
-  it('已确认部署的 Safe 不会被描述为待部署', () => {
+  it('不会从旧的 UI state 推断 Safe 已部署', () => {
     render(SafeStatusCard, {
       props: {
         state: stateWith({
@@ -52,9 +52,8 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    expect(screen.getByText('已部署')).toBeTruthy()
-    expect(screen.getByText('Safe 已确认部署；链上部署状态已确认。')).toBeTruthy()
-    expect(screen.queryByText('Safe 已派生待部署；部署状态仍须由链上确认。')).toBeNull()
+    expect(screen.getByText('未知（尚未检查）')).toBeTruthy()
+    expect(screen.queryByText('已部署（链上只读检查）')).toBeNull()
   })
 
   it('首次抽奖前置条件就绪时仍禁用预览按钮，并说明 UserOperation 集成待完成', () => {

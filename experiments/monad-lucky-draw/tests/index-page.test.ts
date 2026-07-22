@@ -17,12 +17,12 @@ describe('Monad Lucky Draw 首页', () => {
     expect(screen.getByText(/仅在点击.*后才会请求登录签名/)).toBeTruthy()
   })
 
-  it('在激活前将派生 Safe 标示为未部署', () => {
+  it('在用户请求检查前将 Safe 部署状态如实标示为未知', () => {
     renderPage()
 
     expect(screen.getByText('反事实 Safe')).toBeTruthy()
-    expect(screen.getByText('未部署')).toBeTruthy()
-    expect(screen.getByText(/尚未验证 Safe 派生/)).toBeTruthy()
+    expect(screen.getByText('未知（尚未检查）')).toBeTruthy()
+    expect(screen.getByText(/Safe 地址派生不等于部署/)).toBeTruthy()
   })
 
   it('在就绪条件为 false 时禁用首次赞助激活抽奖', () => {

@@ -5,6 +5,7 @@ import type { LoginSnapshot } from '../lib/eoaLogin'
 import { evaluateActivationReadiness } from '../lib/activationReadiness'
 import { MONAD_ACTIVATION_CONFIG } from '../lib/monadConfig'
 import { deriveMonadCounterfactualSafe } from '../lib/safeAddress'
+import { getMonadSafeDeploymentStatus } from '../lib/safeDeploymentStatus'
 import WalletConnectionPanel from '../components/WalletConnectionPanel.vue'
 import SafeStatusCard from '../components/SafeStatusCard.vue'
 import DrawResultCard from '../components/DrawResultCard.vue'
@@ -28,6 +29,18 @@ function syncLogin(snapshot: LoginSnapshot) {
   const safe = deriveMonadCounterfactualSafe({ owner: snapshot.account, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n })
   demoState.value = transitionDemoState(next, { type: 'safeDerivationVerified', address: safe.address })
 }
+
+/** The sole live RPC read is deliberately behind the Safe card's click event. */
+async function checkSafeDeploymentStatus() {
+  const stateAtClick = demoState.value
+  const address = stateAtClick.counterfactualSafeAddress
+  if (!stateAtClick.authenticated || !stateAtClick.safeDerivationVerified || !address) return
+
+  const result = await getMonadSafeDeploymentStatus(address)
+  // Do not apply a delayed result to an account that changed while reading.
+  if (demoState.value.counterfactualSafeAddress !== address || !demoState.value.authenticated) return
+  demoState.value = transitionDemoState(demoState.value, { type: 'safeDeploymentStatusChecked', status: result.kind })
+}
 </script>
 
 <template>
@@ -37,7 +50,7 @@ function syncLogin(snapshot: LoginSnapshot) {
       <h1 id="page-title">Monad Lucky Draw</h1>
       <p class="lead">一个围绕 EOA 绑定、反事实 Safe 与后续 Session Key 的学习型抽奖流程。</p>
       <div class="security-boundary" role="note" aria-label="安全边界">
-        <strong>安全边界：</strong>仅限测试网，不涉及真实资产。仅在点击“连接钱包并登录”后才会请求登录签名；不会发送交易或执行 UserOperation。
+        <strong>安全边界：</strong>仅限测试网，不涉及真实资产。仅在点击“连接钱包并登录”后才会请求登录签名；仅在点击“检查 Safe 链上状态”后才会进行只读 RPC 查询。不会发送交易或执行 UserOperation。
       </div>
     </header>
 
@@ -48,7 +61,7 @@ function syncLogin(snapshot: LoginSnapshot) {
       </div>
       <div class="cards">
         <WalletConnectionPanel :state="demoState" @login-state="syncLogin" />
-        <SafeStatusCard :state="demoState" />
+        <SafeStatusCard :state="demoState" @check-deployment-status="checkSafeDeploymentStatus" />
         <DrawResultCard :state="demoState" :first-draw-available="firstDrawAvailable" :activation-readiness="activationReadiness" />
       </div>
     </section>
