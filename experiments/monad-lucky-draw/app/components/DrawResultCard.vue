@@ -19,9 +19,13 @@ const props = withDefaults(defineProps<{
   sponsorEnabled?: boolean
   outcome?: DrawOutcome
   sessionEnabled?: boolean
+  entryPointDeposit?: string
+  sessionFundingSufficient?: boolean
 }>(), {
   sponsorEnabled: false,
   sessionEnabled: false,
+  entryPointDeposit: '0',
+  sessionFundingSufficient: false,
   outcome: () => ({ kind: 'idle' })
 })
 
@@ -65,7 +69,7 @@ const canSessionDraw = computed(() =>
     <div class="eyebrow">步骤 3</div>
     <h2 id="draw-title">激活与抽奖</h2>
     <p class="description">
-      在 Sponsor 就绪时，点击后将：服务端用 Pimlico 赞助固定 <code>draw()</code> UserOperation → 钱包签署一次 Owner 授权 → 广播并等待 receipt。
+      首次激活由 Sponsor 赞助：服务端用 Pimlico 赞助固定 <code>draw()</code> UserOperation → 钱包签署一次 Owner 授权 → 广播并等待 receipt。
       登录签名不等于链上 AA 授权。
     </p>
     <button
@@ -83,7 +87,7 @@ const canSessionDraw = computed(() =>
     <h3>后续抽奖</h3>
     <p class="description">
       启用免弹窗会生成浏览器 Session Key，并需<strong>一次</strong> Owner 钱包授权将其加入 Safe。
-      之后抽奖由 Session Key 本地签名，不再弹窗。服务端仍只允许固定 <code>draw()</code>，且有次数与过期限制。
+      后续抽奖由 Session Key 本地签名，并从 Safe 的 EntryPoint 充值支付 Gas，不再弹窗。服务端仍只允许固定 <code>draw()</code>，且有 3 次与过期限制。
     </p>
     <button
       type="button"
@@ -99,7 +103,7 @@ const canSessionDraw = computed(() =>
       @click="emit('session-draw')"
     >免弹窗抽奖</button>
     <p id="session-help" class="help">
-      Session Key 在链上是 Safe owner（threshold=1），密码学上权限较宽；Demo 依赖短有效期、少次数与服务端拒签非 draw 调用。
+      EntryPoint Deposit：{{ props.entryPointDeposit }} wei MON。Deposit 已检测到；最终余额是否足够由服务端准备时确认。充值仅能进入当前 Safe 的 EntryPoint deposit。Session Key 在链上是 Safe owner（threshold=1），密码学上权限较宽；仅测试网，Demo 依赖短有效期、3 次限制与服务端拒签非 draw 调用。
     </p>
 
     <p v-if="props.outcome.kind === 'idle'" class="result" role="status">暂无抽奖结果。</p>

@@ -10,7 +10,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 import { toSafeSmartAccount } from 'permissionless/accounts'
 import { MONAD_ACTIVATION_CONFIG } from './monadConfig'
-import type { UnsignedSponsoredUserOperation } from './activationUserOperation'
+import type { UnsignedUserOperation } from './activationUserOperation'
 import { toSignableUserOperation } from './signActivationUserOperation'
 
 const monadTestnet = defineChain({
@@ -25,7 +25,7 @@ export async function signWithOwnerWallet(input: {
   readonly owner: Address
   readonly ethereum: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
   readonly safe: Address
-  readonly userOperation: UnsignedSponsoredUserOperation
+  readonly userOperation: UnsignedUserOperation
 }): Promise<Hex> {
   const walletClient = createWalletClient({
     account: input.owner,
@@ -56,7 +56,7 @@ export async function signWithOwnerWallet(input: {
 export async function signWithSessionKey(input: {
   readonly privateKey: `0x${string}`
   readonly safe: Address
-  readonly userOperation: UnsignedSponsoredUserOperation
+  readonly userOperation: UnsignedUserOperation
 }): Promise<Hex> {
   const sessionAccount = privateKeyToAccount(input.privateKey)
   const publicClient = createPublicClient({

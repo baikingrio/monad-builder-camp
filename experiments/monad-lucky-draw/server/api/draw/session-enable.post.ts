@@ -1,3 +1,5 @@
+import { deriveMonadCounterfactualSafe } from '../../../app/lib/safeAddress'
+import { MONAD_ACTIVATION_CONFIG } from '../../../app/lib/monadConfig'
 import type { Address } from 'viem'
 import { prepareSessionEnableUserOperation } from '../../utils/sessionExecution'
 import { sanitizeActivationError } from '../../utils/sanitizeActivationError'
@@ -25,11 +27,16 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 400)
     return { ok: false, reason: 'explicit-click-required' }
   }
+  const expectedSafe = deriveMonadCounterfactualSafe({ owner: session.eoa, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n }).address
   const safe = typeof body?.safe === 'string' ? body.safe : ''
   const sessionAddress = typeof body?.sessionAddress === 'string' ? body.sessionAddress : ''
   if (!/^0x[a-fA-F0-9]{40}$/.test(safe) || !/^0x[a-fA-F0-9]{40}$/.test(sessionAddress)) {
     setResponseStatus(event, 400)
     return { ok: false, reason: 'invalid-addresses' }
+  }
+  if (safe.toLowerCase() !== expectedSafe.toLowerCase()) {
+    setResponseStatus(event, 400)
+    return { ok: false, reason: 'safe-mismatch' }
   }
 
   try {

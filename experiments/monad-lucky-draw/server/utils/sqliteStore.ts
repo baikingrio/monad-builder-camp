@@ -14,6 +14,15 @@ export interface SessionGrantRecord {
   readonly status: 'pending' | 'active'
 }
 
+export interface SessionDrawPreparationRecord {
+  readonly id: string
+  readonly eoa: string
+  readonly safe: string
+  readonly sessionAddress: string
+  readonly userOperation: Record<string, unknown>
+  readonly expiresAt: number
+}
+
 export interface SqliteAuthClaimStore extends AuthClaimStore {
   readonly path: string
   canonicalMessage(nonce: NonceRecord): string
@@ -28,6 +37,9 @@ export interface SqliteAuthClaimStore extends AuthClaimStore {
   activateSessionGrant(input: { eoa: string; safe: string; sessionAddress: string }): boolean
   readActiveSessionGrant(input: { eoa: string; safe: string; now: number }): SessionGrantRecord | undefined
   consumeSessionGrantCall(input: { eoa: string; safe: string }): boolean
+  saveSessionDrawPreparation(input: { eoa: string; safe: string; sessionAddress: string; userOperation: Record<string, unknown>; expiresAt: number; now: number }): SessionDrawPreparationRecord
+  /** Claims exactly once before broadcast; failed broadcasts deliberately require a fresh preparation. */
+  claimSessionDrawPreparation(input: { preparationId: string; eoa: string; safe: string; now: number }): SessionDrawPreparationRecord | undefined
   close(): void
 }
 
@@ -57,6 +69,11 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
       status TEXT NOT NULL CHECK(status IN ('pending','active')),
       created_at INTEGER NOT NULL,
       PRIMARY KEY (eoa, safe)
+    );
+    CREATE TABLE IF NOT EXISTS session_draw_preparation (
+      id TEXT PRIMARY KEY, eoa TEXT NOT NULL, safe TEXT NOT NULL, session_address TEXT NOT NULL,
+      user_operation_json TEXT NOT NULL, expires_at INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('prepared','claimed')), created_at INTEGER NOT NULL
     );
   `)
   // Existing demo DBs created before status existed.
@@ -182,6 +199,22 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
         UPDATE session_grant SET remaining_calls = remaining_calls - 1
         WHERE eoa = ? AND safe = ? AND status = 'active' AND remaining_calls > 0
       `).run(normalizeAddress(eoa), normalizeAddress(safe)).changes === 1
+    },
+    saveSessionDrawPreparation({ eoa, safe, sessionAddress, userOperation, expiresAt, now }) {
+      const record: SessionDrawPreparationRecord = { id: `session-draw-${randomUUID()}`, eoa: normalizeAddress(eoa), safe: normalizeAddress(safe), sessionAddress: normalizeAddress(sessionAddress), userOperation: JSON.parse(JSON.stringify(userOperation)) as Record<string, unknown>, expiresAt }
+      database.prepare(`INSERT INTO session_draw_preparation (id, eoa, safe, session_address, user_operation_json, expires_at, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'prepared', ?)`)
+        .run(record.id, record.eoa, record.safe, record.sessionAddress, JSON.stringify(record.userOperation), record.expiresAt, now)
+      return record
+    },
+    claimSessionDrawPreparation({ preparationId, eoa, safe, now }) {
+      database.exec('BEGIN IMMEDIATE')
+      try {
+        const row = database.prepare(`SELECT * FROM session_draw_preparation WHERE id = ? AND eoa = ? AND safe = ? AND status = 'prepared' AND expires_at > ?`).get(preparationId, normalizeAddress(eoa), normalizeAddress(safe), now) as Record<string, unknown> | undefined
+        if (!row) { database.exec('COMMIT'); return undefined }
+        const changes = database.prepare("UPDATE session_draw_preparation SET status = 'claimed' WHERE id = ? AND status = 'prepared'").run(preparationId).changes
+        database.exec('COMMIT')
+        return changes === 1 ? { id: String(row.id), eoa: String(row.eoa), safe: String(row.safe), sessionAddress: String(row.session_address), userOperation: JSON.parse(String(row.user_operation_json)) as Record<string, unknown>, expiresAt: Number(row.expires_at) } : undefined
+      } catch (error) { database.exec('ROLLBACK'); throw error }
     },
     close() { database.close() }
   }

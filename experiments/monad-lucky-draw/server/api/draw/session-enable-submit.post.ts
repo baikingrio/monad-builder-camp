@@ -1,3 +1,5 @@
+import { deriveMonadCounterfactualSafe } from '../../../app/lib/safeAddress'
+import { MONAD_ACTIVATION_CONFIG } from '../../../app/lib/monadConfig'
 import { submitSessionUserOperation } from '../../utils/sessionExecution'
 import { sanitizeActivationError } from '../../utils/sanitizeActivationError'
 import { activateSessionGrant } from '../../utils/sessionKeyStore'
@@ -24,8 +26,13 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 401)
     return { ok: false, reason: 'unauthenticated-session' }
   }
+  const expectedSafe = deriveMonadCounterfactualSafe({ owner: session.eoa, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n }).address
   const safe = typeof body?.safe === 'string' ? body.safe : ''
   const sessionAddress = typeof body?.sessionAddress === 'string' ? body.sessionAddress : ''
+  if (safe.toLowerCase() !== expectedSafe.toLowerCase()) {
+    setResponseStatus(event, 400)
+    return { ok: false, reason: 'safe-mismatch' }
+  }
   const signature = body?.userOperation?.signature
   if (!body?.userOperation || typeof signature !== 'string' || signature === '0x' || signature.length < 130) {
     setResponseStatus(event, 400)

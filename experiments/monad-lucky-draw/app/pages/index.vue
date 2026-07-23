@@ -12,6 +12,7 @@ import { signActivationUserOperation } from '../lib/signActivationUserOperation'
 import { signWithOwnerWallet, signWithSessionKey } from '../lib/signSessionUserOperation'
 import { loadSessionKey, saveSessionKey } from '../lib/sessionKeyStorage'
 import type { UnsignedSponsoredUserOperation } from '../lib/activationUserOperation'
+import { createDepositRequest } from '../lib/entryPointDeposit'
 import WalletConnectionPanel from '../components/WalletConnectionPanel.vue'
 import SafeStatusCard from '../components/SafeStatusCard.vue'
 import DrawResultCard, { type DrawOutcome } from '../components/DrawResultCard.vue'
@@ -19,6 +20,9 @@ import DrawResultCard, { type DrawOutcome } from '../components/DrawResultCard.v
 const demoState = ref(createDemoState())
 const sponsorEnabled = ref(false)
 const sessionEnabled = ref(false)
+const entryPointDeposit = ref('0')
+const depositAmount = ref('0.01')
+const depositRefreshing = ref(false)
 const drawOutcome = ref<DrawOutcome>({ kind: 'idle' })
 const activationReadiness = computed(() => evaluateActivationReadiness({
   config: MONAD_ACTIVATION_CONFIG,
@@ -52,6 +56,36 @@ async function refreshSponsorReadiness() {
 
 onMounted(() => { void refreshSponsorReadiness() })
 
+async function refreshFunding() {
+  if (!demoState.value.authenticated || !demoState.value.counterfactualSafeAddress) return
+  depositRefreshing.value = true
+  try {
+    const response = await $fetch<{ ok: boolean; deposit?: string }>('/api/draw/funding')
+    if (response.ok && /^\d+$/.test(response.deposit || '')) entryPointDeposit.value = response.deposit!
+  } finally {
+    depositRefreshing.value = false
+  }
+}
+
+async function rechargeEntryPoint() {
+  const safe = demoState.value.counterfactualSafeAddress
+  if (!safe) return
+  try {
+    const request = createDepositRequest({ safe, amount: depositAmount.value })
+    const hash = await ethereumProvider().request({ method: 'eth_sendTransaction', params: [{ from: demoState.value.connectedEoa, to: request.to, data: request.data, value: `0x${request.value.toString(16)}` }] })
+    drawOutcome.value = { kind: 'pending', message: '正在等待 EntryPoint 充值交易确认…' }
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const receipt = await ethereumProvider().request({ method: 'eth_getTransactionReceipt', params: [hash] })
+      if (receipt) break
+      await new Promise(resolve => setTimeout(resolve, 1_000))
+    }
+    await refreshFunding()
+    drawOutcome.value = { kind: 'idle' }
+  } catch (error) {
+    drawOutcome.value = { kind: 'error', message: error instanceof Error ? error.message : 'EntryPoint 充值失败' }
+  }
+}
+
 function syncLogin(snapshot: LoginSnapshot) {
   if (!snapshot.authenticated || !snapshot.account || snapshot.chainId !== 10143) {
     demoState.value = createDemoState()
@@ -67,6 +101,7 @@ function syncLogin(snapshot: LoginSnapshot) {
   if (sponsorEnabled.value) next = transitionDemoState(next, { type: 'sponsorReadinessChanged', ready: true })
   demoState.value = next
   refreshLocalSession(snapshot.account, safe.address)
+  void refreshFunding()
 }
 
 async function checkSafeDeploymentStatus() {
@@ -236,17 +271,18 @@ async function sessionDraw() {
     return
   }
 
-  drawOutcome.value = { kind: 'pending', message: '正在准备免弹窗抽卡（无钱包弹窗）…' }
+  drawOutcome.value = { kind: 'pending', message: '正在准备用户充值支付 Gas 的免弹窗抽卡…' }
   try {
     const prepared = await $fetch<{
       ok: boolean
       reason?: string
+      preparationId?: string
       userOperation?: UnsignedSponsoredUserOperation
     }>('/api/draw/session-draw', {
       method: 'POST',
       body: { userClicked: true, safe }
     })
-    if (!prepared.ok || !prepared.userOperation) throw new Error(prepared.reason || '免弹窗抽卡准备失败')
+    if (!prepared.ok || !prepared.userOperation || !prepared.preparationId) throw new Error(prepared.reason || '免弹窗抽卡准备失败')
 
     const signature = await signWithSessionKey({
       privateKey: stored.privateKey,
@@ -264,7 +300,7 @@ async function sessionDraw() {
       remainingCalls?: number
     }>('/api/draw/session-draw-submit', {
       method: 'POST',
-      body: { safe, userOperation: { ...prepared.userOperation, signature } }
+      body: { preparationId: prepared.preparationId, signature, safe }
     })
     if (!submitted.ok || !submitted.userOpHash) throw new Error(submitted.reason || '免弹窗抽卡提交失败')
 
@@ -307,6 +343,7 @@ async function sessionDraw() {
           :activation-readiness="activationReadiness"
           :sponsor-enabled="sponsorEnabled"
           :session-enabled="sessionEnabled"
+          :entry-point-deposit="entryPointDeposit"
           :outcome="drawOutcome"
           @activate="activateAndDraw"
           @enable-session="enableSessionKey"
@@ -315,9 +352,17 @@ async function sessionDraw() {
       </div>
     </section>
 
+    <section class="faucet-boundary" aria-labelledby="deposit-title">
+      <h2 id="deposit-title">EntryPoint 充值（当前 Safe）</h2>
+      <p>Deposit：<code>{{ entryPointDeposit }}</code> wei MON。此操作由你的 EOA 钱包直接调用固定 EntryPoint 的 <code>depositTo(currentSafe)</code>；应用不托管资金。</p>
+      <label>MON 金额 <input v-model="depositAmount" inputmode="decimal" aria-label="MON 充值金额"></label>
+      <button type="button" :disabled="!demoState.authenticated || depositRefreshing" @click="rechargeEntryPoint">充值到 EntryPoint</button>
+      <button type="button" :disabled="!demoState.authenticated || depositRefreshing" @click="refreshFunding">刷新 Deposit</button>
+    </section>
+
     <aside class="faucet-boundary" aria-labelledby="faucet-title">
       <h2 id="faucet-title">测试代币边界</h2>
-      <p><strong>测试代币请使用 Monad 官方水龙头。</strong>本应用不提供水龙头、不保管私钥、不发送测试币。Gas 由 Pimlico Paymaster 在资格有效时赞助。</p>
+      <p><strong>测试代币请使用 Monad 官方水龙头。</strong>本应用不提供水龙头、不保管私钥、不发送测试币。首次激活/Session 启用由 Sponsor 赞助；后续 Session 抽卡由用户的 EntryPoint Deposit 支付。</p>
     </aside>
   </main>
 </template>

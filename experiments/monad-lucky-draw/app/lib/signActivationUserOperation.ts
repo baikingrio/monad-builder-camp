@@ -9,7 +9,7 @@ import {
 } from 'viem'
 import { toSafeSmartAccount } from 'permissionless/accounts'
 import { MONAD_ACTIVATION_CONFIG } from './monadConfig'
-import type { UnsignedSponsoredUserOperation } from './activationUserOperation'
+import type { UnsignedSponsoredUserOperation, UnsignedUserOperation } from './activationUserOperation'
 
 const monadTestnet = defineChain({
   id: 10143,
@@ -23,7 +23,7 @@ function qty(value: string): bigint {
 }
 
 /** Convert the server-sponsored hex UserOperation into the bigint shape Safe signing expects. */
-export function toSignableUserOperation(userOp: UnsignedSponsoredUserOperation) {
+export function toSignableUserOperation(userOp: UnsignedUserOperation) {
   return {
     sender: userOp.sender as Address,
     nonce: qty(userOp.nonce),
@@ -35,10 +35,12 @@ export function toSignableUserOperation(userOp: UnsignedSponsoredUserOperation) 
     preVerificationGas: qty(userOp.preVerificationGas),
     maxFeePerGas: qty(userOp.maxFeePerGas),
     maxPriorityFeePerGas: qty(userOp.maxPriorityFeePerGas),
-    paymaster: userOp.paymaster as Address,
-    paymasterVerificationGasLimit: qty(userOp.paymasterVerificationGasLimit),
-    paymasterPostOpGasLimit: qty(userOp.paymasterPostOpGasLimit),
-    paymasterData: userOp.paymasterData,
+    ...(userOp.paymaster ? {
+      paymaster: userOp.paymaster as Address,
+      paymasterVerificationGasLimit: qty(userOp.paymasterVerificationGasLimit!),
+      paymasterPostOpGasLimit: qty(userOp.paymasterPostOpGasLimit!),
+      paymasterData: userOp.paymasterData!
+    } : {}),
     signature: '0x' as Hex
   }
 }

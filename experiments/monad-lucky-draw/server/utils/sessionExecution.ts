@@ -16,10 +16,12 @@ import {
   type UnsignedSponsoredUserOperation
 } from '../../app/lib/activationUserOperation'
 import { MONAD_ACTIVATION_CONFIG } from '../../app/lib/monadConfig'
+import { entryPointDepositAbi } from '../../app/lib/entryPointDeposit'
 import { evaluateSessionKeyDraw } from '../../app/lib/sessionKeyPolicy'
 import { LUCKY_DRAW_DRAW_SELECTOR } from '../../app/lib/userOperationSimulation'
 import type { LiveExecutionConfig } from './liveExecutionConfig'
 import type { SessionGrantRecord } from './sqliteStore'
+import { assertSufficientEntryPointDeposit } from './userFundedExecution'
 
 const monadTestnet = defineChain({
   id: 10143,
@@ -163,16 +165,80 @@ export async function prepareSessionDrawUserOperation(input: {
   })
   if (!decision.allowed) throw new Error(decision.reason)
 
-  return sponsorSafeCalls({
-    live: input.live,
-    safe: input.grant.safe as Address,
-    signerAddress: input.grant.sessionAddress as Address,
-    calls: [{
-      to: MONAD_ACTIVATION_CONFIG.luckyDraw as Address,
-      value: 0n,
-      data: encodeLuckyDrawCallData()
-    }]
+  const publicClient = createPublicClient({ chain: monadTestnet, transport: http(input.live.rpcUrl) })
+  const account = await toSafeSmartAccount({
+    client: publicClient,
+    address: input.grant.safe as Address,
+    owners: [signerPlaceholder(input.grant.sessionAddress as Address)],
+    version: '1.4.1',
+    entryPoint: { address: MONAD_ACTIVATION_CONFIG.entryPoint as Address, version: '0.7' },
+    safe4337ModuleAddress: input.live.safe4337Module,
+    safeModuleSetupAddress: MONAD_ACTIVATION_CONFIG.safeModuleSetup as Address,
+    safeProxyFactoryAddress: MONAD_ACTIVATION_CONFIG.safeFactory as Address,
+    safeSingletonAddress: MONAD_ACTIVATION_CONFIG.safeSingleton as Address,
+    saltNonce: 0n,
+    useMultiSendForSetup: false
   })
+  // The private bundler URL is used only for gas estimation/submission. There is no Paymaster request.
+  const bundler = createBundlerClient({ transport: http(input.live.createBundlerUrl()), chain: monadTestnet })
+  const pimlico = createPimlicoClient({
+    transport: http(input.live.createBundlerUrl()),
+    entryPoint: { address: entryPoint07Address, version: '0.7' }
+  })
+  const gasPrice = await pimlico.getUserOperationGasPrice()
+  const draft = {
+    sender: account.address,
+    nonce: await account.getNonce(),
+    callData: await account.encodeCalls([{ to: MONAD_ACTIVATION_CONFIG.luckyDraw as Address, value: 0n, data: encodeLuckyDrawCallData() }]),
+    maxFeePerGas: gasPrice.fast.maxFeePerGas,
+    maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
+    signature: await account.getStubSignature()
+  }
+  const estimate = await bundler.estimateUserOperationGas({ entryPointAddress: entryPoint07Address, ...draft })
+  const userOperation = serializeUserOperationForClient({
+    sender: account.address,
+    nonce: toHexQuantity(draft.nonce),
+    callData: draft.callData,
+    callGasLimit: toHexQuantity(estimate.callGasLimit),
+    verificationGasLimit: toHexQuantity(estimate.verificationGasLimit),
+    preVerificationGas: toHexQuantity(estimate.preVerificationGas),
+    maxFeePerGas: toHexQuantity(draft.maxFeePerGas),
+    maxPriorityFeePerGas: toHexQuantity(draft.maxPriorityFeePerGas),
+    signature: '0x' as const
+  })
+  const gasBudget = BigInt(userOperation.callGasLimit) + BigInt(userOperation.verificationGasLimit) + BigInt(userOperation.preVerificationGas)
+  if (gasBudget > input.live.maxGas) throw new Error(`user-funded user operation exceeds configured max gas (needed ${gasBudget.toString()}, max ${input.live.maxGas.toString()})`)
+  const deposit = await publicClient.readContract({
+    address: MONAD_ACTIVATION_CONFIG.entryPoint as Address,
+    abi: entryPointDepositAbi,
+    functionName: 'balanceOf',
+    args: [account.address]
+  })
+  assertSufficientEntryPointDeposit({ deposit, userOperation })
+  return { userOperation, entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint }
+}
+
+export function assertSessionDrawSubmitBody(body: Record<string, unknown> | null | undefined): { preparationId: string; signature: string } {
+  if (!body || typeof body.preparationId !== 'string' || body.preparationId.length < 1 || typeof body.signature !== 'string' || body.signature === '0x' || body.signature.length < 130) {
+    throw new Error('session preparation ID and signature are required')
+  }
+  if (Object.keys(body).some(key => !['preparationId', 'signature', 'safe'].includes(key))) {
+    throw new Error('caller-supplied user operation fields are forbidden')
+  }
+  return { preparationId: body.preparationId, signature: body.signature }
+}
+
+export function assertStoredSessionDrawOperation(input: { userOperation: Record<string, unknown>; safe: string; expectedCallData: string; deposit?: bigint }): void {
+  const op = input.userOperation
+  if (String(op.sender).toLowerCase() !== input.safe.toLowerCase()) throw new Error('stored operation sender does not match expected Safe')
+  if (typeof op.factory !== 'undefined' || typeof op.factoryData !== 'undefined') throw new Error('stored user-funded operation must not contain factory fields')
+  if (['paymaster', 'paymasterData', 'paymasterVerificationGasLimit', 'paymasterPostOpGasLimit'].some(field => typeof op[field] !== 'undefined')) throw new Error('stored user-funded operation must not contain paymaster fields')
+  if (op.callData !== input.expectedCallData) throw new Error('stored operation callData is not the fixed LuckyDraw draw() call')
+  if (input.deposit !== undefined) assertSufficientEntryPointDeposit({ deposit: input.deposit, userOperation: op as unknown as Parameters<typeof assertSufficientEntryPointDeposit>[0]['userOperation'] })
+}
+
+export function appendSessionSignature(input: { userOperation: Record<string, unknown>; signature: string }): Record<string, unknown> {
+  return { ...input.userOperation, signature: input.signature }
 }
 
 export async function submitSessionUserOperation(input: {
@@ -195,10 +261,6 @@ export async function submitSessionUserOperation(input: {
     preVerificationGas: BigInt(String(raw.preVerificationGas)),
     maxFeePerGas: BigInt(String(raw.maxFeePerGas)),
     maxPriorityFeePerGas: BigInt(String(raw.maxPriorityFeePerGas)),
-    paymaster: raw.paymaster as Address,
-    paymasterVerificationGasLimit: BigInt(String(raw.paymasterVerificationGasLimit ?? '0x0')),
-    paymasterPostOpGasLimit: BigInt(String(raw.paymasterPostOpGasLimit ?? '0x0')),
-    paymasterData: (raw.paymasterData as Hex) ?? '0x',
     signature: raw.signature as Hex
   }
   const userOpHash = await bundler.sendUserOperation({

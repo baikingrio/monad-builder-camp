@@ -61,3 +61,27 @@ export function resolveSponsorGates(config: {
 
   return { readiness, rateLimit, budget, breaker, live: readiness.enabled ? live : undefined }
 }
+
+/** Separate private Bundler access for deposit-paid Session draws; Sponsor readiness is not a gate. */
+export function resolveUserFundedExecution(config: {
+  luckyDrawSessionSecret: string
+  luckyDrawPimlicoApiKey: string
+  luckyDrawSponsorMaxGas: string
+  luckyDrawSponsorTotalBudget: string
+  luckyDrawSafe4337Module: string
+  public: { monadRpcUrl: string }
+}): LiveExecutionConfig | undefined {
+  try {
+    return createLiveExecutionConfig({
+      enabled: true,
+      apiKey: config.luckyDrawPimlicoApiKey,
+      sessionSecret: config.luckyDrawSessionSecret,
+      rpcUrl: config.public.monadRpcUrl || 'https://testnet-rpc.monad.xyz',
+      maxGas: config.luckyDrawSponsorMaxGas,
+      totalBudget: config.luckyDrawSponsorTotalBudget,
+      safe4337Module: config.luckyDrawSafe4337Module
+    })
+  } catch {
+    return undefined
+  }
+}
