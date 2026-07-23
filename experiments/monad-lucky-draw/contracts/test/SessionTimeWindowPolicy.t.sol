@@ -76,22 +76,19 @@ contract SessionTimeWindowPolicyTest is Test {
         policy.initializeWithMultiplexer(OTHER_ACCOUNT, OTHER_CONFIG_ID, abi.encode(uint48(10), uint48(9)));
     }
 
-    function testRejectsConfigurationFromDifferentMultiplexer() public {
+    function testReturnsValidationFailureForDifferentMultiplexer() public {
         vm.prank(OTHER_MULTIPLEXER);
-        vm.expectRevert();
-        policy.checkUserOpPolicy(CONFIG_ID, _userOp(ACCOUNT));
+        assertEq(policy.checkUserOpPolicy(CONFIG_ID, _userOp(ACCOUNT)), 1);
     }
 
-    function testRejectsConfigurationForDifferentAccount() public {
+    function testReturnsValidationFailureForDifferentAccount() public {
         vm.prank(MULTIPLEXER);
-        vm.expectRevert();
-        policy.checkUserOpPolicy(CONFIG_ID, _userOp(OTHER_ACCOUNT));
+        assertEq(policy.checkUserOpPolicy(CONFIG_ID, _userOp(OTHER_ACCOUNT)), 1);
     }
 
-    function testRejectsConfigurationForDifferentConfigId() public {
+    function testReturnsValidationFailureForDifferentConfigId() public {
         vm.prank(MULTIPLEXER);
-        vm.expectRevert();
-        policy.checkUserOpPolicy(OTHER_CONFIG_ID, _userOp(ACCOUNT));
+        assertEq(policy.checkUserOpPolicy(OTHER_CONFIG_ID, _userOp(ACCOUNT)), 1);
     }
 
     function _validationData() internal returns (uint256) {
