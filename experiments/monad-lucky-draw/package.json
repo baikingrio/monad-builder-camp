@@ -6,24 +6,26 @@
   "scripts": {
     "dev": "nuxi dev --host 0.0.0.0",
     "build": "nuxi build",
-    "test": "vitest run --config vitest.config.ts",
+    "validate:dependency-pins": "node scripts/validate-dependency-pins.mjs",
+    "validate:safe7579-manifest": "node scripts/validate-safe7579-manifest.mjs",
+    "test": "npm run validate:dependency-pins && npm run validate:safe7579-manifest && vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
-    "@safe-global/protocol-kit": "^4.1.0",
-    "ox": "^0.11.3",
-    "permissionless": "^0.3.7",
-    "viem": "^2.44.4"
+    "@safe-global/protocol-kit": "4.1.7",
+    "ox": "0.11.3",
+    "permissionless": "0.3.7",
+    "viem": "2.44.4"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "latest",
-    "@testing-library/vue": "latest",
-    "@types/node": "latest",
-    "@vitejs/plugin-vue": "latest",
-    "jsdom": "latest",
-    "nuxt": "^4.0.0",
-    "typescript": "^5.9.3",
-    "vitest": "latest",
-    "vue-tsc": "^3.3.7"
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/vue": "8.1.0",
+    "@types/node": "26.1.1",
+    "@vitejs/plugin-vue": "6.0.8",
+    "jsdom": "29.1.1",
+    "nuxt": "4.5.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "vue-tsc": "3.3.7"
   }
 }

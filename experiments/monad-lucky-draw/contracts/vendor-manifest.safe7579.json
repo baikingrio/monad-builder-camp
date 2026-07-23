@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1",
+  "monad": {
+    "chainId": "10143",
+    "rpc": "https://testnet-rpc.monad.xyz",
+    "knownAbsent": {
+      "launchpad": "0x75798463024bda64d83c94a64bc7d7eab41300ef",
+      "adapter": "0x7579f2ad53b01c3d8779fe17928e0d48885b0003",
+      "smartSessionEmissary": "0xad568b3f825a8d5ffc06dd3253526b64d810ae89",
+      "uniActionPolicy": "0x0000006dda6c463511c4e9b05cfc34c1247fcf1f",
+      "timeFramePolicy": "0x8177451511de0577b911c254e9551d981c26dc72",
+      "valueLimitPolicy": "0xa09b47de6e510cbdc18b97e9239bedcb44fb4901"
+    }
+  },
+  "safe7579": {
+    "repository": "rhinestonewtf/safe7579",
+    "sourceUrl": "https://github.com/rhinestonewtf/safe7579/tree/40d92beeb423ec6a94d5667350086148df8b170c",
+    "tag": "v2.0.0",
+    "commit": "40d92beeb423ec6a94d5667350086148df8b170c",
+    "license": "GPL-3.0",
+    "compiler": "0.8.28+commit.7893614a",
+    "evmVersion": "cancun",
+    "deploymentScript": "script/Deploy.s.sol",
+    "deploymentConfig": "Deploy.toml",
+    "dependencies": {
+      "entryPointV07": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+      "registry": "0x000000000069E2a187AEFFb852bF3cCdC95151B2"
+    }
+  },
+  "smartSessions": {
+    "repository": "erc7579/smartsessions",
+    "sourceUrl": "https://github.com/erc7579/smartsessions/tree/dc20f0b90541ef93e88177690b0c882384896332",
+    "tag": "v1.0.0",
+    "commit": "dc20f0b90541ef93e88177690b0c882384896332",
+    "releaseClaim": "Production release of the audited v1.0.0 contracts",
+    "compiler": "0.8.28+commit.7893614a",
+    "evmVersion": "cancun",
+    "deploymentScript": "script/Deploy.s.sol"
+  },
+  "artifacts": {
+    "safe7579": {
+      "sourcePath": "src/Safe7579.sol",
+      "sourceSha256": "1b705e938929d647aa46e47853e9dc82ce8e6a8709d8c5ae482530eeda73e082",
+      "artifactPath": "artifacts/Safe7579/Safe7579.json",
+      "artifactSha256": "c768004f22244b2e9fa619b930ba0ec0adb835563aa720ab7269f9f0061d6146",
+      "creationKeccak256": "0xdae0c93e44c4e64b0091d96e0d115c555589946d3001ac43b93058b4fa1d0df7",
+      "runtimeKeccak256": "0x8a96b2fdda11e5a9dcae7c3d6fb63bb69178442ce8d8c4ce5bad94525a4b6cd6"
+    },
+    "safe7579Launchpad": {
+      "sourcePath": "src/Safe7579Launchpad.sol",
+      "sourceSha256": "1419c90ecaf83d07706cdd377de257e089efbd9637efdf65841e1889a4ca470c",
+      "artifactPath": "artifacts/Safe7579Launchpad/Safe7579Launchpad.json",
+      "artifactSha256": "b8335bed0ee89196e2eeff5c202fdc311a5064e788eeae09673a3b5539de4fde",
+      "creationKeccak256": "0xcecb43483f0aaaee185df96310610117118f2c74c14d78cb450819fe547808d2",
+      "runtimeKeccak256": "0xe87eee7c1c0775a9f28522149998bbf51bbfe644068be930dcf858986b5cb50f"
+    },
+    "smartSession": {
+      "sourcePath": "contracts/SmartSession.sol",
+      "sourceSha256": "013b4741122eab8b4eebceebfd01bae59071df543f30619ea5c7443543b79902",
+      "artifactPath": "artifacts/SmartSession/SmartSession.json",
+      "artifactSha256": "0627bf4d72f954aa0168de4773e95571c782308cf0cb03935e4c19c417cff6ea",
+      "license": "AGPL-3.0-only",
+      "creationKeccak256": "0x995dc65f3effa975773bbac2a5c8c1ce2a2b9bd806de0ae0cf4806520da405be",
+      "runtimeKeccak256": "0xf2817b8943b9fc813ad3602de2f0b973dc6b7e190f1b77dc9eb02b8d3022ab0c"
+    },
+    "uniActionPolicy": {
+      "sourcePath": "contracts/external/policies/UniActionPolicy.sol",
+      "sourceSha256": "6822105d9e018b823df832f89c4973eb792bcb46b7f33afa7862ed924c4d40e5",
+      "artifactPath": "artifacts/UniActionPolicy/UniActionPolicy.json",
+      "artifactSha256": "b385f7a360b31f1a0e4ab36794bbebd71574317527a411478b3b6f498cfadd22",
+      "license": "MIT",
+      "creationKeccak256": "0x0f0cab528f656576ec43373b64563dcae51dbf72baf6f28137fdb37417514ec9",
+      "runtimeKeccak256": "0xc58f13d259c69d0db90f611347535e2d5642f3352740b7d58fbf6e6b939670dd"
+    }
+  },
+  "drawOnly": {
+    "target": "0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70",
+    "selector": "0x0eecae21",
+    "signature": "draw()",
+    "value": "0"
+  },
+  "deployment": {
+    "permitted": false,
+    "blockers": {
+      "timeFramePolicyAudited": false,
+      "valueLimitPolicyAudited": false,
+      "fullPolicyStackPinned": false,
+      "monadCodeVerified": false
+    },
+    "reason": "TimeFramePolicy and ValueLimitPolicy exist only as test/mock sources in the pinned v1.0.0 tree; they are not approved deployment artifacts. No deployment or account creation is authorized."
+  }
+}

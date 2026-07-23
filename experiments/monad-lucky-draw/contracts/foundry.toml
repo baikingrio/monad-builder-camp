@@ -8,6 +8,7 @@ solc_version = "0.8.28"
 
 # Monad Testnet. Broadcasting requires explicit user approval and a locally provided RPC/account.
 chain_id = 10143
+fs_permissions = [{ access = "read", path = "./vendor-manifest.safe7579.json" }]
 
 [rpc_endpoints]
 monad_testnet = "https://testnet-rpc.monad.xyz"
