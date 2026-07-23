@@ -2,7 +2,12 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {ConfigId} from "../src/interfaces/ISmartSessionPolicy.sol";
+import {
+    ConfigId,
+    ISmartSessionActionPolicy,
+    ISmartSessionPolicy,
+    ISmartSessionUserOpPolicy
+} from "../src/interfaces/ISmartSessionPolicy.sol";
 import {DrawOnlyActionPolicy} from "../src/policies/DrawOnlyActionPolicy.sol";
 
 contract DrawOnlyActionPolicyTest is Test {
@@ -59,6 +64,24 @@ contract DrawOnlyActionPolicyTest is Test {
         uint256 result = policy.checkAction(CONFIG_ID, ACCOUNT, LUCKY_DRAW, 0, abi.encodePacked(DRAW_SELECTOR, bytes32(0)));
 
         assertEq(result, VALIDATION_FAILED);
+    }
+
+    function testRejectsCalldataShorterThanSelector(uint8 length) public {
+        length = uint8(bound(length, 0, 3));
+        bytes memory data = new bytes(length);
+
+        vm.prank(MULTIPLEXER);
+        uint256 result = policy.checkAction(CONFIG_ID, ACCOUNT, LUCKY_DRAW, 0, data);
+
+        assertEq(result, VALIDATION_FAILED);
+    }
+
+    function testSupportsOnlyActionPolicyInterfaces() public view {
+        assertTrue(type(ISmartSessionPolicy).interfaceId == 0x989c9e46, "unexpected IPolicy id");
+        assertTrue(policy.supportsInterface(0x01ffc9a7), "missing ERC-165");
+        assertTrue(policy.supportsInterface(type(ISmartSessionPolicy).interfaceId), "missing IPolicy");
+        assertTrue(policy.supportsInterface(type(ISmartSessionActionPolicy).interfaceId), "missing IActionPolicy");
+        assertFalse(policy.supportsInterface(type(ISmartSessionUserOpPolicy).interfaceId), "must reject IUserOpPolicy");
     }
 
     function testRejectsWrongInitializationTarget() public {

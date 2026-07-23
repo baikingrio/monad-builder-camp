@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {
     ConfigId,
+    IERC165,
     PackedUserOperation,
-    ISmartSessionActionPolicy,
     ISmartSessionPolicy,
     ISmartSessionUserOpPolicy
 } from "../interfaces/ISmartSessionPolicy.sol";
@@ -44,7 +44,7 @@ contract SessionTimeWindowPolicy is ISmartSessionUserOpPolicy {
     }
 
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == 0x01ffc9a7 || interfaceId == type(ISmartSessionPolicy).interfaceId
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(ISmartSessionPolicy).interfaceId
             || interfaceId == type(ISmartSessionUserOpPolicy).interfaceId;
     }
 }

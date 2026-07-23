@@ -17,13 +17,16 @@ struct PackedUserOperation {
     bytes signature;
 }
 
+/// @dev Minimal ERC-165 ABI-compatible interface.
+interface IERC165 {
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
 /// @dev Minimal local ABI-compatible form of Smart Sessions v1 IPolicy.
-interface ISmartSessionPolicy {
+interface ISmartSessionPolicy is IERC165 {
     event PolicySet(ConfigId id, address multiplexer, address account);
 
     function initializeWithMultiplexer(address account, ConfigId configId, bytes calldata initData) external;
-
-    function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
 /// @dev Minimal local ABI-compatible form of Smart Sessions v1 IActionPolicy.

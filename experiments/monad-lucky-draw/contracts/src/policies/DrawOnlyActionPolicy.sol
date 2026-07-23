@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {ConfigId, ISmartSessionActionPolicy, ISmartSessionPolicy} from "../interfaces/ISmartSessionPolicy.sol";
+import {ConfigId, IERC165, ISmartSessionActionPolicy, ISmartSessionPolicy} from "../interfaces/ISmartSessionPolicy.sol";
 
 /// @notice Non-deployable action policy that permits only Lucky Draw's draw() call.
 contract DrawOnlyActionPolicy is ISmartSessionActionPolicy {
@@ -47,7 +47,7 @@ contract DrawOnlyActionPolicy is ISmartSessionActionPolicy {
     }
 
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == 0x01ffc9a7 || interfaceId == type(ISmartSessionPolicy).interfaceId
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(ISmartSessionPolicy).interfaceId
             || interfaceId == type(ISmartSessionActionPolicy).interfaceId;
     }
 }

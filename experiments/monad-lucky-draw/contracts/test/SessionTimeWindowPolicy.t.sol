@@ -2,7 +2,13 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {ConfigId, PackedUserOperation} from "../src/interfaces/ISmartSessionPolicy.sol";
+import {
+    ConfigId,
+    ISmartSessionActionPolicy,
+    ISmartSessionPolicy,
+    ISmartSessionUserOpPolicy,
+    PackedUserOperation
+} from "../src/interfaces/ISmartSessionPolicy.sol";
 import {SessionTimeWindowPolicy} from "../src/policies/SessionTimeWindowPolicy.sol";
 
 contract SessionTimeWindowPolicyTest is Test {
@@ -89,6 +95,14 @@ contract SessionTimeWindowPolicyTest is Test {
     function testReturnsValidationFailureForDifferentConfigId() public {
         vm.prank(MULTIPLEXER);
         assertEq(policy.checkUserOpPolicy(OTHER_CONFIG_ID, _userOp(ACCOUNT)), 1);
+    }
+
+    function testSupportsOnlyUserOpPolicyInterfaces() public view {
+        assertTrue(type(ISmartSessionPolicy).interfaceId == 0x989c9e46, "unexpected IPolicy id");
+        assertTrue(policy.supportsInterface(0x01ffc9a7), "missing ERC-165");
+        assertTrue(policy.supportsInterface(type(ISmartSessionPolicy).interfaceId), "missing IPolicy");
+        assertTrue(policy.supportsInterface(type(ISmartSessionUserOpPolicy).interfaceId), "missing IUserOpPolicy");
+        assertFalse(policy.supportsInterface(type(ISmartSessionActionPolicy).interfaceId), "must reject IActionPolicy");
     }
 
     function _validationData() internal returns (uint256) {
