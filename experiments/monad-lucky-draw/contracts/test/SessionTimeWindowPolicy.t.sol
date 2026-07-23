@@ -35,6 +35,29 @@ contract SessionTimeWindowPolicyTest is Test {
         assertEq(uint48(result >> 208), VALID_AFTER);
     }
 
+    function testValidationDataIsInvalidBeforeValidAfter() public {
+        vm.warp(VALID_AFTER - 1);
+
+        assertFalse(_isValidAt(block.timestamp, _validationData()));
+    }
+
+    function testValidationDataIsValidAtAndWithinTimeWindow() public {
+        vm.warp(VALID_AFTER);
+        assertTrue(_isValidAt(block.timestamp, _validationData()));
+
+        vm.warp(VALID_AFTER + 1);
+        assertTrue(_isValidAt(block.timestamp, _validationData()));
+
+        vm.warp(VALID_UNTIL);
+        assertTrue(_isValidAt(block.timestamp, _validationData()));
+    }
+
+    function testValidationDataIsInvalidAfterValidUntil() public {
+        vm.warp(VALID_UNTIL + 1);
+
+        assertFalse(_isValidAt(block.timestamp, _validationData()));
+    }
+
     function testRejectsZeroValidUntil() public {
         vm.prank(OTHER_MULTIPLEXER);
         vm.expectRevert();
@@ -69,6 +92,18 @@ contract SessionTimeWindowPolicyTest is Test {
         vm.prank(MULTIPLEXER);
         vm.expectRevert();
         policy.checkUserOpPolicy(OTHER_CONFIG_ID, _userOp(ACCOUNT));
+    }
+
+    function _validationData() internal returns (uint256) {
+        vm.prank(MULTIPLEXER);
+        return policy.checkUserOpPolicy(CONFIG_ID, _userOp(ACCOUNT));
+    }
+
+    function _isValidAt(uint256 timestamp, uint256 validationData) internal pure returns (bool) {
+        uint48 validUntil = uint48(validationData >> 160);
+        uint48 validAfter = uint48(validationData >> 208);
+
+        return timestamp >= validAfter && (validUntil == 0 || timestamp <= validUntil);
     }
 
     function _userOp(address sender) internal pure returns (PackedUserOperation memory) {
