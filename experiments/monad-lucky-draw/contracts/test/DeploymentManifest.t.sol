@@ -65,6 +65,30 @@ contract DeploymentManifestTest is Test {
         assertEq(vm.parseJsonAddress(manifest, ".monad.knownAbsent.valueLimitPolicy"), 0xA09B47De6E510cBdC18B97E9239bEDCb44fb4901);
     }
 
+    function testManifestClassifiesCustomPoliciesAsLocalOnlyAndNotAudited() public view {
+        string memory manifest = vm.readFile(MANIFEST);
+
+        assertEq(
+            vm.parseJsonString(manifest, ".customPolicies.drawOnlyActionPolicy.sourcePath"),
+            "src/policies/DrawOnlyActionPolicy.sol"
+        );
+        assertEq(vm.parseJsonBool(manifest, ".customPolicies.drawOnlyActionPolicy.localOnly"), true);
+        assertEq(
+            vm.parseJsonString(manifest, ".customPolicies.drawOnlyActionPolicy.auditStatus"), "NOT_AUDITED"
+        );
+        assertEq(vm.parseJsonBool(manifest, ".customPolicies.drawOnlyActionPolicy.deploymentEligible"), false);
+
+        assertEq(
+            vm.parseJsonString(manifest, ".customPolicies.sessionTimeWindowPolicy.sourcePath"),
+            "src/policies/SessionTimeWindowPolicy.sol"
+        );
+        assertEq(vm.parseJsonBool(manifest, ".customPolicies.sessionTimeWindowPolicy.localOnly"), true);
+        assertEq(
+            vm.parseJsonString(manifest, ".customPolicies.sessionTimeWindowPolicy.auditStatus"), "NOT_AUDITED"
+        );
+        assertEq(vm.parseJsonBool(manifest, ".customPolicies.sessionTimeWindowPolicy.deploymentEligible"), false);
+    }
+
     function testManifestBlocksDeploymentUntilAllPoliciesHaveReleaseProvenance() public view {
         string memory manifest = vm.readFile(MANIFEST);
 
@@ -72,5 +96,6 @@ contract DeploymentManifestTest is Test {
         assertEq(vm.parseJsonBool(manifest, ".deployment.blockers.timeFramePolicyAudited"), false);
         assertEq(vm.parseJsonBool(manifest, ".deployment.blockers.valueLimitPolicyAudited"), false);
         assertEq(vm.parseJsonBool(manifest, ".deployment.blockers.fullPolicyStackPinned"), false);
+        assertEq(vm.parseJsonBool(manifest, ".deployment.blockers.monadCodeVerified"), false);
     }
 }

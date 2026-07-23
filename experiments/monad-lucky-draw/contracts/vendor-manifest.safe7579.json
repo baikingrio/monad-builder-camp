@@ -79,6 +79,20 @@
     "signature": "draw()",
     "value": "0"
   },
+  "customPolicies": {
+    "drawOnlyActionPolicy": {
+      "sourcePath": "src/policies/DrawOnlyActionPolicy.sol",
+      "localOnly": true,
+      "auditStatus": "NOT_AUDITED",
+      "deploymentEligible": false
+    },
+    "sessionTimeWindowPolicy": {
+      "sourcePath": "src/policies/SessionTimeWindowPolicy.sol",
+      "localOnly": true,
+      "auditStatus": "NOT_AUDITED",
+      "deploymentEligible": false
+    }
+  },
   "deployment": {
     "permitted": false,
     "blockers": {

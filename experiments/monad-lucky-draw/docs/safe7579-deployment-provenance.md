@@ -29,6 +29,15 @@
 
 所有文件 SHA-256 与 creation/runtime keccak256 都写入 [`contracts/vendor-manifest.safe7579.json`](../contracts/vendor-manifest.safe7579.json)，由 Foundry 测试固定校验。
 
+## 项目内自定义 Policy：仅本地、未审计
+
+下列项目代码只记录其源码路径，**不**属于上述上游 release、artifact 哈希或审计结论：
+
+- `src/policies/DrawOnlyActionPolicy.sol`
+- `src/policies/SessionTimeWindowPolicy.sol`
+
+manifest 对两者均固定为 `localOnly: true`、`auditStatus: "NOT_AUDITED"`、`deploymentEligible: false`。这些字段是 fail-closed 分类，不是部署、审计或生产可用性声明；没有为自定义 Policy 记录 artifact、bytecode hash、部署地址或发布溯源。详见[自定义 Policy 安全审查](draw-only-custom-policy-security-review.md)。
+
 ## Monad Testnet 结论
 
 在此前只读 `eth_getCode` 检查中，下列惯用跨链地址在 Monad Testnet（chain ID `10143`）均返回 `0x`：
@@ -53,7 +62,7 @@
 - 不能只依赖服务端 TTL 或次数限制来代替链上权限边界；
 - 在完整的、经审查并固定版本的 expiry / value-zero policy 被选定前，禁止创建新的 7579 Safe、安装 Session 或广播部署交易。
 
-`vendor-manifest.safe7579.json` 因此将 `deployment.permitted` 固定为 `false`。`npm run validate:safe7579-manifest` 会验证该状态、四个指定 blocker、完整哈希和抽卡边界；`forge test` 会单独运行 Foundry manifest 测试。任何未来新增的 7579 部署、建账户或安装 Session 脚本都必须先调用这个 manifest gate，且只有在新的独立审查和明确广播授权后才可以修改其阻断状态。
+`vendor-manifest.safe7579.json` 因此将 `deployment.permitted` 固定为 `false`，且所有 blocker 均为 `false`。`npm run validate:safe7579-manifest` 会验证该状态、四个指定 blocker、完整哈希和抽卡边界；`forge test` 会单独运行 Foundry manifest 测试及自定义 Policy 的 fail-closed 分类。任何未来新增的 7579 部署、建账户或安装 Session 脚本都必须先调用这个 manifest gate，且只有在独立审计、实际集成、dry run 和明确广播授权完成后才可以修改其阻断状态。
 
 ## 可以继续的非广播工作
 
