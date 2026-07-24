@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1",
+  "kind": "local-safe7579-policy-bytecode-preflight",
+  "status": "BLOCKED",
+  "localOnly": true,
+  "nonBroadcast": true,
+  "manifestPath": "contracts/vendor-manifest.safe7579.json",
+  "deployment": {
+    "permitted": false,
+    "blockers": {
+      "timeFramePolicyAudited": false,
+      "valueLimitPolicyAudited": false,
+      "fullPolicyStackPinned": false,
+      "monadCodeVerified": false
+    },
+    "reason": "TimeFramePolicy and ValueLimitPolicy exist only as test/mock sources in the pinned v1.0.0 tree; they are not approved deployment artifacts. No deployment or account creation is authorized."
+  },
+  "policies": [
+    {
+      "name": "DrawOnlyActionPolicy",
+      "artifactPath": "contracts/out/DrawOnlyActionPolicy.sol/DrawOnlyActionPolicy.json",
+      "manifestClassification": {
+        "sourcePath": "src/policies/DrawOnlyActionPolicy.sol",
+        "localOnly": true,
+        "auditStatus": "NOT_AUDITED",
+        "deploymentEligible": false
+      },
+      "creationKeccak256": "0xe276a58ef497db21d6823451064bdbbb0cc3c18e08e2e04ae74b8793c014af4f",
+      "runtimeKeccak256": "0x82b9aff191306e68d4a57188fc5c00f47e1c075b4994328d808aaf12eb70b506"
+    },
+    {
+      "name": "SessionTimeWindowPolicy",
+      "artifactPath": "contracts/out/SessionTimeWindowPolicy.sol/SessionTimeWindowPolicy.json",
+      "manifestClassification": {
+        "sourcePath": "src/policies/SessionTimeWindowPolicy.sol",
+        "localOnly": true,
+        "auditStatus": "NOT_AUDITED",
+        "deploymentEligible": false
+      },
+      "creationKeccak256": "0xeecad38cf8b07da3c412372959c45ad641c4d3ba3be01219dd29b86b453c7b46",
+      "runtimeKeccak256": "0xcbd1df3857637da6a57cd1090cf6e3153c71422395ee7f3229f0bf1113b862fd"
+    }
+  ],
+  "blockedReasons": [
+    "manifest.deployment.permitted is not true",
+    "DrawOnlyActionPolicy is NOT_AUDITED",
+    "DrawOnlyActionPolicy is not deployment eligible",
+    "SessionTimeWindowPolicy is NOT_AUDITED",
+    "SessionTimeWindowPolicy is not deployment eligible"
+  ],
+  "guarantees": [
+    "Reads only the local manifest and the two local compiled artifact JSON files.",
+    "Calculates Ethereum Keccak-256 through local cast keccak; no SHA3-256 substitution is used.",
+    "Does not read .env, access RPC, broadcast transactions, deploy contracts, or create a Safe."
+  ],
+  "limitations": [
+    "This is not Safe7579 deployment integration or proof of Safe7579 compatibility.",
+    "This does not verify on-chain code, account state, signatures, configuration, or policy behavior.",
+    "A non-BLOCKED result would still require separate audit, deployment authorization, and integration review."
+  ]
+}
