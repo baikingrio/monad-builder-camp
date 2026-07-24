@@ -42,11 +42,8 @@
     }
   ],
   "blockedReasons": [
-    "manifest.deployment.permitted is not true",
-    "DrawOnlyActionPolicy is NOT_AUDITED",
-    "DrawOnlyActionPolicy is not deployment eligible",
-    "SessionTimeWindowPolicy is NOT_AUDITED",
-    "SessionTimeWindowPolicy is not deployment eligible"
+    "local-only preflight mode does not authorize READY_FOR_SEPARATE_REVIEW",
+    "manifest.deployment.permitted is not true"
   ],
   "guarantees": [
     "Reads only the local manifest and the two local compiled artifact JSON files.",

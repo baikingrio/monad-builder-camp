@@ -81,21 +81,29 @@ const policies = policyArtifacts.map(({ manifestKey, contractName, artifactRelat
   };
 });
 
+const localOnlyMode = true;
 const blockedReasons = [];
+if (localOnlyMode) {
+  blockedReasons.push("local-only preflight mode does not authorize READY_FOR_SEPARATE_REVIEW");
+}
 if (manifest.deployment.permitted !== true) blockedReasons.push("manifest.deployment.permitted is not true");
 for (const policy of policies) {
-  if (policy.manifestClassification.auditStatus === "NOT_AUDITED") {
-    blockedReasons.push(`${policy.name} is NOT_AUDITED`);
+  const classification = policy.manifestClassification;
+  if (classification.localOnly !== true) {
+    blockedReasons.push(`${policy.name} localOnly is not true`);
   }
-  if (policy.manifestClassification.deploymentEligible !== true) {
-    blockedReasons.push(`${policy.name} is not deployment eligible`);
+  if (classification.auditStatus !== "NOT_AUDITED") {
+    blockedReasons.push(`${policy.name} auditStatus is not NOT_AUDITED`);
+  }
+  if (classification.deploymentEligible !== false) {
+    blockedReasons.push(`${policy.name} deploymentEligible is not false`);
   }
 }
 
 const report = {
   schemaVersion: "1",
   kind: "local-safe7579-policy-bytecode-preflight",
-  status: blockedReasons.length === 0 ? "READY_FOR_SEPARATE_REVIEW" : "BLOCKED",
+  status: "BLOCKED",
   localOnly: true,
   nonBroadcast: true,
   manifestPath: manifestRelativePath,
