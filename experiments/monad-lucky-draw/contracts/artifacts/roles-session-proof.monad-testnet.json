@@ -1,0 +1,13 @@
+{
+  "chainId": 10143,
+  "provedAt": "2026-07-24T05:22:25.157Z",
+  "owner": "0x7c0343c808B827e4286381c2292d92c3f19152a4",
+  "safe": "0xB127994eed5f0AA8A42a446E796A2Fcc0D1bB276",
+  "sessionAddress": "0xbfa431122c17905F623685141D1A06D9433aC7F2",
+  "rolesModifier": "0xF6452e2423e0abEA5C1694408DC2B72A9e299De7",
+  "enableTx": "0x44a6a080d849a81fa6abd80f8ed42e3f9aa7ba368aa303c425cd4b64c8d24b77",
+  "enableUserOpHash": "0xe28eac813ecb86d8264af76c876782052af0354828f057eed08e5d4e4bd0f7df",
+  "drawTx": "0xe61c0226fc36d487b5b8486bf2fe006de7d68504c2029bc4495ab0b0c670025f",
+  "unauthorizedReverted": true,
+  "unauthorizedError": "The contract function \"execTransactionWithRole\" reverted with the following signature:\n0xd0a9bf58\n\nUnable to decode signature \"0xd0a9bf58\" as it was not found on the provided ABI.\nMake sure you are using the correct ABI and that the error e"
+}

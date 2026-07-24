@@ -36,7 +36,7 @@ describe('Task4 状态分支的诚实文案', () => {
       }
     })
 
-    expect(screen.getByText('反事实 Safe 地址')).toBeTruthy()
+    expect(screen.getByText('Safe 地址')).toBeTruthy()
     expect(screen.getByText('0x59cB895943D081a4b102aA22d19Eda1FabFD37d7')).toBeTruthy()
   })
 

@@ -11,6 +11,19 @@ export interface MonadActivationConfig {
   readonly safeModuleSetup: string
   readonly entryPoint: string
   readonly luckyDraw: string
+  /**
+   * Safe7579 / Smart Session product path — archived / superseded by Zodiac Roles.
+   * Remains disabled. See `safe7579Readiness.ts` and `rolesReadiness.ts`.
+   */
+  readonly safe7579SmartSessionEnabled: false
+  /**
+   * Zodiac Roles session product path. Stack is live on Monad; enable after session tip funding.
+   */
+  readonly rolesSessionEnabled: true
+  /** Canonical Roles mastercopy (multi-chain CREATE2). */
+  readonly rolesMasterCopy: string
+  /** Zodiac ModuleProxyFactory (multi-chain CREATE2). */
+  readonly rolesModuleProxyFactory: string
 }
 
 const CHAIN_ID = 10143 as const
@@ -23,6 +36,9 @@ const LUCKY_DRAW = '0x4b3c1adBeeb0776ee31Fd51Eb6169da97A222E70'
 /** permissionless Safe 1.4.1 + EntryPoint 0.7 defaults (verified bytecode on Monad Testnet). */
 const SAFE_4337_MODULE = '0x75cf11467937ce3F2f357CE24ffc3DBF8fD5c226'
 const SAFE_MODULE_SETUP = '0x2dd68b007B46fBe91B9A7c3EDa5A7a1063cB5b47'
+/** Canonical multi-chain Roles addresses — not officially listed for Monad. */
+const ROLES_MASTER_COPY = '0x9646fDAD06d3e24444381f44362a3B0eB343D337'
+const ROLES_MODULE_PROXY_FACTORY = '0x000000000000aDdB49795b0f9bA5BC298cDda236'
 const ADDRESS = /^0x[a-fA-F0-9]{40}$/
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -34,7 +50,11 @@ export const MONAD_ACTIVATION_CONFIG: MonadActivationConfig = Object.freeze({
   safe4337Module: SAFE_4337_MODULE,
   safeModuleSetup: SAFE_MODULE_SETUP,
   entryPoint: ENTRY_POINT_V07,
-  luckyDraw: LUCKY_DRAW
+  luckyDraw: LUCKY_DRAW,
+  safe7579SmartSessionEnabled: false,
+  rolesSessionEnabled: true,
+  rolesMasterCopy: ROLES_MASTER_COPY,
+  rolesModuleProxyFactory: ROLES_MODULE_PROXY_FACTORY
 })
 
 /** Accept only the audited public endpoints and factory bytecode for this milestone. */

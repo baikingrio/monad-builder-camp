@@ -12,6 +12,10 @@ export interface SessionGrantRecord {
   readonly expiresAt: number
   readonly remainingCalls: number
   readonly status: 'pending' | 'active'
+  /** Product path used for this grant. Defaults to legacy for existing rows. */
+  readonly mode: 'legacy' | 'roles'
+  /** Roles modifier proxy for mode=roles grants. */
+  readonly rolesModifier?: string
 }
 
 export interface SessionDrawPreparationRecord {
@@ -21,6 +25,13 @@ export interface SessionDrawPreparationRecord {
   readonly sessionAddress: string
   readonly userOperation: Record<string, unknown>
   readonly expiresAt: number
+  /** Optional Roles EOA tx payload when mode=roles. */
+  readonly rolesTransaction?: {
+    readonly to: string
+    readonly value: string
+    readonly data: string
+    readonly rolesModifier: string
+  }
 }
 
 export interface SqliteAuthClaimStore extends AuthClaimStore {
@@ -33,11 +44,28 @@ export interface SqliteAuthClaimStore extends AuthClaimStore {
   /** Reserve a one-time claim. Pending claims are reusable after failed activate/submit. */
   reserveSponsorClaim(input: { claimId: string; eoa: string; safe: string }): { ok: true; claimId: string; reused: boolean } | { ok: false; reason: 'completed' }
   completeSponsorClaim(input: { eoa: string; safe: string }): boolean
-  upsertPendingSessionGrant(input: { eoa: string; safe: string; sessionAddress: string; expiresAt: number; remainingCalls: number; now: number }): SessionGrantRecord
+  upsertPendingSessionGrant(input: {
+    eoa: string
+    safe: string
+    sessionAddress: string
+    expiresAt: number
+    remainingCalls: number
+    now: number
+    mode?: 'legacy' | 'roles'
+    rolesModifier?: string
+  }): SessionGrantRecord
   activateSessionGrant(input: { eoa: string; safe: string; sessionAddress: string }): boolean
   readActiveSessionGrant(input: { eoa: string; safe: string; now: number }): SessionGrantRecord | undefined
   consumeSessionGrantCall(input: { eoa: string; safe: string }): boolean
-  saveSessionDrawPreparation(input: { eoa: string; safe: string; sessionAddress: string; userOperation: Record<string, unknown>; expiresAt: number; now: number }): SessionDrawPreparationRecord
+  saveSessionDrawPreparation(input: {
+    eoa: string
+    safe: string
+    sessionAddress: string
+    userOperation: Record<string, unknown>
+    expiresAt: number
+    now: number
+    rolesTransaction?: SessionDrawPreparationRecord['rolesTransaction']
+  }): SessionDrawPreparationRecord
   /** Claims exactly once before broadcast; failed broadcasts deliberately require a fresh preparation. */
   claimSessionDrawPreparation(input: { preparationId: string; eoa: string; safe: string; now: number }): SessionDrawPreparationRecord | undefined
   close(): void
@@ -68,17 +96,35 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
       remaining_calls INTEGER NOT NULL,
       status TEXT NOT NULL CHECK(status IN ('pending','active')),
       created_at INTEGER NOT NULL,
+      mode TEXT NOT NULL DEFAULT 'legacy',
+      roles_modifier TEXT,
       PRIMARY KEY (eoa, safe)
     );
     CREATE TABLE IF NOT EXISTS session_draw_preparation (
       id TEXT PRIMARY KEY, eoa TEXT NOT NULL, safe TEXT NOT NULL, session_address TEXT NOT NULL,
       user_operation_json TEXT NOT NULL, expires_at INTEGER NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('prepared','claimed')), created_at INTEGER NOT NULL
+      status TEXT NOT NULL CHECK(status IN ('prepared','claimed')), created_at INTEGER NOT NULL,
+      roles_transaction_json TEXT
     );
   `)
   // Existing demo DBs created before status existed.
   try {
     database.exec(`ALTER TABLE sponsor_claim ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'`)
+  } catch {
+    // column already present
+  }
+  try {
+    database.exec(`ALTER TABLE session_grant ADD COLUMN mode TEXT NOT NULL DEFAULT 'legacy'`)
+  } catch {
+    // column already present
+  }
+  try {
+    database.exec(`ALTER TABLE session_grant ADD COLUMN roles_modifier TEXT`)
+  } catch {
+    // column already present
+  }
+  try {
+    database.exec(`ALTER TABLE session_draw_preparation ADD COLUMN roles_transaction_json TEXT`)
   } catch {
     // column already present
   }
@@ -149,25 +195,38 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
         throw error
       }
     },
-    upsertPendingSessionGrant({ eoa, safe, sessionAddress, expiresAt, remainingCalls, now }) {
+    upsertPendingSessionGrant({ eoa, safe, sessionAddress, expiresAt, remainingCalls, now, mode, rolesModifier }) {
       const record: SessionGrantRecord = {
         eoa: normalizeAddress(eoa),
         safe: normalizeAddress(safe),
         sessionAddress: normalizeAddress(sessionAddress),
         expiresAt,
         remainingCalls,
-        status: 'pending'
+        status: 'pending',
+        mode: mode === 'roles' ? 'roles' : 'legacy',
+        rolesModifier: rolesModifier ? normalizeAddress(rolesModifier) : undefined
       }
       database.prepare(`
-        INSERT INTO session_grant (eoa, safe, session_address, expires_at, remaining_calls, status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+        INSERT INTO session_grant (eoa, safe, session_address, expires_at, remaining_calls, status, created_at, mode, roles_modifier)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)
         ON CONFLICT(eoa, safe) DO UPDATE SET
           session_address = excluded.session_address,
           expires_at = excluded.expires_at,
           remaining_calls = excluded.remaining_calls,
           status = 'pending',
-          created_at = excluded.created_at
-      `).run(record.eoa, record.safe, record.sessionAddress, record.expiresAt, record.remainingCalls, now)
+          created_at = excluded.created_at,
+          mode = excluded.mode,
+          roles_modifier = excluded.roles_modifier
+      `).run(
+        record.eoa,
+        record.safe,
+        record.sessionAddress,
+        record.expiresAt,
+        record.remainingCalls,
+        now,
+        record.mode,
+        record.rolesModifier ?? null
+      )
       return record
     },
     activateSessionGrant({ eoa, safe, sessionAddress }) {
@@ -178,11 +237,21 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
     },
     readActiveSessionGrant({ eoa, safe, now }) {
       const row = database.prepare(`
-        SELECT eoa, safe, session_address, expires_at, remaining_calls, status
+        SELECT eoa, safe, session_address, expires_at, remaining_calls, status, mode, roles_modifier
         FROM session_grant
-        WHERE eoa = ? AND safe = ? AND status = 'active' AND expires_at > ? AND remaining_calls > 0
+        WHERE eoa = ? AND safe = ? AND status = 'active' AND expires_at > ?
+          AND (mode = 'roles' OR remaining_calls > 0)
       `).get(normalizeAddress(eoa), normalizeAddress(safe), now) as
-        | { eoa: string; safe: string; session_address: string; expires_at: number; remaining_calls: number; status: 'active' }
+        | {
+          eoa: string
+          safe: string
+          session_address: string
+          expires_at: number
+          remaining_calls: number
+          status: 'active'
+          mode?: string
+          roles_modifier?: string | null
+        }
         | undefined
       if (!row) return undefined
       return {
@@ -191,19 +260,51 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
         sessionAddress: row.session_address,
         expiresAt: row.expires_at,
         remainingCalls: row.remaining_calls,
-        status: row.status
+        status: row.status,
+        mode: row.mode === 'roles' ? 'roles' : 'legacy',
+        rolesModifier: row.roles_modifier ? String(row.roles_modifier) : undefined
       }
     },
     consumeSessionGrantCall({ eoa, safe }) {
+      // Roles self-paid path: no call cap — only confirm the grant is still active.
+      const rolesTouched = database.prepare(`
+        UPDATE session_grant SET remaining_calls = remaining_calls
+        WHERE eoa = ? AND safe = ? AND status = 'active' AND mode = 'roles'
+      `).run(normalizeAddress(eoa), normalizeAddress(safe)).changes === 1
+      if (rolesTouched) return true
       return database.prepare(`
         UPDATE session_grant SET remaining_calls = remaining_calls - 1
-        WHERE eoa = ? AND safe = ? AND status = 'active' AND remaining_calls > 0
+        WHERE eoa = ? AND safe = ? AND status = 'active' AND remaining_calls > 0 AND mode != 'roles'
       `).run(normalizeAddress(eoa), normalizeAddress(safe)).changes === 1
     },
-    saveSessionDrawPreparation({ eoa, safe, sessionAddress, userOperation, expiresAt, now }) {
-      const record: SessionDrawPreparationRecord = { id: `session-draw-${randomUUID()}`, eoa: normalizeAddress(eoa), safe: normalizeAddress(safe), sessionAddress: normalizeAddress(sessionAddress), userOperation: JSON.parse(JSON.stringify(userOperation)) as Record<string, unknown>, expiresAt }
-      database.prepare(`INSERT INTO session_draw_preparation (id, eoa, safe, session_address, user_operation_json, expires_at, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'prepared', ?)`)
-        .run(record.id, record.eoa, record.safe, record.sessionAddress, JSON.stringify(record.userOperation), record.expiresAt, now)
+    saveSessionDrawPreparation({ eoa, safe, sessionAddress, userOperation, expiresAt, now, rolesTransaction }) {
+      const record: SessionDrawPreparationRecord = {
+        id: `session-draw-${randomUUID()}`,
+        eoa: normalizeAddress(eoa),
+        safe: normalizeAddress(safe),
+        sessionAddress: normalizeAddress(sessionAddress),
+        userOperation: JSON.parse(JSON.stringify(userOperation)) as Record<string, unknown>,
+        expiresAt,
+        rolesTransaction: rolesTransaction
+          ? {
+              to: normalizeAddress(rolesTransaction.to),
+              value: rolesTransaction.value,
+              data: rolesTransaction.data,
+              rolesModifier: normalizeAddress(rolesTransaction.rolesModifier)
+            }
+          : undefined
+      }
+      database.prepare(`INSERT INTO session_draw_preparation (id, eoa, safe, session_address, user_operation_json, expires_at, status, created_at, roles_transaction_json) VALUES (?, ?, ?, ?, ?, ?, 'prepared', ?, ?)`)
+        .run(
+          record.id,
+          record.eoa,
+          record.safe,
+          record.sessionAddress,
+          JSON.stringify(record.userOperation),
+          record.expiresAt,
+          now,
+          record.rolesTransaction ? JSON.stringify(record.rolesTransaction) : null
+        )
       return record
     },
     claimSessionDrawPreparation({ preparationId, eoa, safe, now }) {
@@ -213,7 +314,19 @@ export function createSqliteStore(databasePath: string): SqliteAuthClaimStore {
         if (!row) { database.exec('COMMIT'); return undefined }
         const changes = database.prepare("UPDATE session_draw_preparation SET status = 'claimed' WHERE id = ? AND status = 'prepared'").run(preparationId).changes
         database.exec('COMMIT')
-        return changes === 1 ? { id: String(row.id), eoa: String(row.eoa), safe: String(row.safe), sessionAddress: String(row.session_address), userOperation: JSON.parse(String(row.user_operation_json)) as Record<string, unknown>, expiresAt: Number(row.expires_at) } : undefined
+        if (changes !== 1) return undefined
+        const rolesRaw = row.roles_transaction_json
+        return {
+          id: String(row.id),
+          eoa: String(row.eoa),
+          safe: String(row.safe),
+          sessionAddress: String(row.session_address),
+          userOperation: JSON.parse(String(row.user_operation_json)) as Record<string, unknown>,
+          expiresAt: Number(row.expires_at),
+          rolesTransaction: typeof rolesRaw === 'string' && rolesRaw.length > 0
+            ? JSON.parse(rolesRaw) as SessionDrawPreparationRecord['rolesTransaction']
+            : undefined
+        }
       } catch (error) { database.exec('ROLLBACK'); throw error }
     },
     close() { database.close() }

@@ -13,7 +13,7 @@ import { createPimlicoClient } from 'permissionless/clients/pimlico'
 import {
   encodeLuckyDrawCallData,
   serializeUserOperationForClient,
-  type UnsignedSponsoredUserOperation
+  type UnsignedUserOperation
 } from '../../app/lib/activationUserOperation'
 import { MONAD_ACTIVATION_CONFIG } from '../../app/lib/monadConfig'
 import { entryPointDepositAbi } from '../../app/lib/entryPointDeposit'
@@ -22,6 +22,7 @@ import { LUCKY_DRAW_DRAW_SELECTOR } from '../../app/lib/userOperationSimulation'
 import type { LiveExecutionConfig } from './liveExecutionConfig'
 import type { SessionGrantRecord } from './sqliteStore'
 import { assertSufficientEntryPointDeposit } from './userFundedExecution'
+import { assertRolesSessionEnableAllowed, buildRolesSessionEnableCalls, predictRolesProxyAddress } from './rolesSessionEnable'
 
 const monadTestnet = defineChain({
   id: 10143,
@@ -29,6 +30,14 @@ const monadTestnet = defineChain({
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
   rpcUrls: { default: { http: ['https://testnet-rpc.monad.xyz'] } }
 })
+
+const SAFE_IS_MODULE_ENABLED_ABI = [{
+  type: 'function',
+  name: 'isModuleEnabled',
+  stateMutability: 'view',
+  inputs: [{ name: 'module', type: 'address' }],
+  outputs: [{ type: 'bool' }]
+}] as const
 
 const ADD_OWNER_ABI = [{
   type: 'function',
@@ -54,14 +63,19 @@ function signerPlaceholder(address: Address) {
   })
 }
 
-async function sponsorSafeCalls(input: {
+/**
+ * Builds an unsigned UserOperation paid by EntryPoint.balanceOf(safe).
+ * Uses the private Bundler URL for gas price + estimate only — no Paymaster.
+ */
+async function prepareUserFundedSafeCalls(input: {
   readonly live: LiveExecutionConfig
   readonly safe: Address
   readonly signerAddress: Address
   readonly calls: readonly { to: Address; value: bigint; data: Hex }[]
-}): Promise<{ readonly userOperation: UnsignedSponsoredUserOperation; readonly entryPoint: string }> {
+}): Promise<{ readonly userOperation: UnsignedUserOperation; readonly entryPoint: string }> {
   const publicClient = createPublicClient({ chain: monadTestnet, transport: http(input.live.rpcUrl) })
   const bundlerUrl = input.live.createBundlerUrl()
+  const bundler = createBundlerClient({ transport: http(bundlerUrl), chain: monadTestnet })
   const pimlico = createPimlicoClient({
     transport: http(bundlerUrl),
     entryPoint: { address: entryPoint07Address, version: '0.7' }
@@ -80,75 +94,129 @@ async function sponsorSafeCalls(input: {
     useMultiSendForSetup: false
   })
 
-  const callData = await account.encodeCalls([...input.calls])
-  const nonce = await account.getNonce()
   const gasPrice = await pimlico.getUserOperationGasPrice()
-  const stubSignature = await account.getStubSignature()
-  const sponsored = await pimlico.sponsorUserOperation({
-    userOperation: {
-      sender: account.address,
-      nonce,
-      callData,
-      maxFeePerGas: gasPrice.fast.maxFeePerGas,
-      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
-      signature: stubSignature
-    }
+  // Prefer standard over fast: user-funded prefund is paid from deposit; fast pricing often overshoots testnet needs.
+  const fee = gasPrice.standard ?? gasPrice.fast
+  const draft = {
+    sender: account.address,
+    nonce: await account.getNonce(),
+    callData: await account.encodeCalls([...input.calls]),
+    maxFeePerGas: fee.maxFeePerGas,
+    maxPriorityFeePerGas: fee.maxPriorityFeePerGas,
+    signature: await account.getStubSignature()
+  }
+  const estimate = await bundler.estimateUserOperationGas({
+    entryPointAddress: entryPoint07Address,
+    ...draft
   })
-
   const userOperation = serializeUserOperationForClient({
     sender: account.address,
-    nonce: toHexQuantity(nonce),
-    callData,
-    callGasLimit: toHexQuantity(sponsored.callGasLimit),
-    verificationGasLimit: toHexQuantity(sponsored.verificationGasLimit),
-    preVerificationGas: toHexQuantity(sponsored.preVerificationGas),
-    maxFeePerGas: toHexQuantity(gasPrice.fast.maxFeePerGas),
-    maxPriorityFeePerGas: toHexQuantity(gasPrice.fast.maxPriorityFeePerGas),
-    paymaster: sponsored.paymaster,
-    paymasterVerificationGasLimit: toHexQuantity(sponsored.paymasterVerificationGasLimit),
-    paymasterPostOpGasLimit: toHexQuantity(sponsored.paymasterPostOpGasLimit),
-    paymasterData: sponsored.paymasterData,
-    signature: '0x'
+    nonce: toHexQuantity(draft.nonce),
+    callData: draft.callData,
+    callGasLimit: toHexQuantity(estimate.callGasLimit),
+    verificationGasLimit: toHexQuantity(estimate.verificationGasLimit),
+    preVerificationGas: toHexQuantity(estimate.preVerificationGas),
+    maxFeePerGas: toHexQuantity(draft.maxFeePerGas),
+    maxPriorityFeePerGas: toHexQuantity(draft.maxPriorityFeePerGas),
+    signature: '0x' as const
   })
 
   const gasBudget = BigInt(userOperation.callGasLimit)
     + BigInt(userOperation.verificationGasLimit)
     + BigInt(userOperation.preVerificationGas)
-    + BigInt(userOperation.paymasterVerificationGasLimit)
-    + BigInt(userOperation.paymasterPostOpGasLimit)
   if (gasBudget > input.live.maxGas) {
-    throw new Error(`sponsored user operation exceeds configured max gas (needed ${gasBudget.toString()}, max ${input.live.maxGas.toString()})`)
+    throw new Error(`user-funded user operation exceeds configured max gas (needed ${gasBudget.toString()}, max ${input.live.maxGas.toString()})`)
   }
+
+  const deposit = await publicClient.readContract({
+    address: MONAD_ACTIVATION_CONFIG.entryPoint as Address,
+    abi: entryPointDepositAbi,
+    functionName: 'balanceOf',
+    args: [account.address]
+  })
+  assertSufficientEntryPointDeposit({ deposit, userOperation })
 
   return { userOperation, entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint }
 }
 
-/** Owner-signed UserOp that adds the session key as a Safe owner (threshold stays 1). */
+/** Owner-signed UserOp that adds the session key as a Safe owner (threshold stays 1). Paid by EntryPoint deposit. */
 export async function prepareSessionEnableUserOperation(input: {
   readonly live: LiveExecutionConfig
   readonly owner: Address
   readonly safe: Address
   readonly sessionAddress: Address
+  /** Optional override; otherwise predicted via ModuleProxyFactory CREATE2. */
+  readonly rolesModifier?: Address
+  /** Extra Safe owners to remove during Roles enable (keep primary EOA). */
+  readonly removeOwners?: readonly { readonly prevOwner: Address; readonly owner: Address }[]
 }) {
+  if (MONAD_ACTIVATION_CONFIG.rolesSessionEnabled === true) {
+    assertRolesSessionEnableAllowed()
+    const publicClient = createPublicClient({ chain: monadTestnet, transport: http(input.live.rpcUrl) })
+    const rolesModifier = input.rolesModifier ?? predictRolesProxyAddress({ safe: input.safe })
+    const bytecode = await publicClient.getBytecode({ address: rolesModifier })
+    const rolesDeployed = Boolean(bytecode && bytecode !== '0x' && bytecode.length > 2)
+    let moduleEnabled = false
+    if (rolesDeployed) {
+      moduleEnabled = await publicClient.readContract({
+        address: input.safe,
+        abi: SAFE_IS_MODULE_ENABLED_ABI,
+        functionName: 'isModuleEnabled',
+        args: [rolesModifier]
+      })
+    }
+    const { calls, rolesModifier: resolvedModifier } = buildRolesSessionEnableCalls({
+      safe: input.safe,
+      sessionAddress: input.sessionAddress,
+      rolesModifier,
+      removeOwners: input.removeOwners,
+      skipDeploy: rolesDeployed,
+      skipEnableModule: moduleEnabled,
+      // First successful enable configured draw-only permissions; re-scoping can revert.
+      skipPermissions: moduleEnabled,
+      deploy: rolesDeployed
+        ? undefined
+        : {
+            factory: MONAD_ACTIVATION_CONFIG.rolesModuleProxyFactory as Address,
+            masterCopy: MONAD_ACTIVATION_CONFIG.rolesMasterCopy as Address,
+            saltNonce: 0n
+          }
+    })
+    if (calls.length < 1) throw new Error('roles-enable-calls-empty')
+    const prepared = await prepareUserFundedSafeCalls({
+      live: input.live,
+      safe: input.safe,
+      signerAddress: input.owner,
+      calls
+    })
+    return { ...prepared, rolesModifier: resolvedModifier, mode: 'roles' as const }
+  }
+
   const data = encodeFunctionData({
     abi: ADD_OWNER_ABI,
     functionName: 'addOwnerWithThreshold',
     args: [input.sessionAddress, 1n]
   })
-  return sponsorSafeCalls({
-    live: input.live,
-    safe: input.safe,
-    signerAddress: input.owner,
-    calls: [{ to: input.safe, value: 0n, data }]
-  })
+  return {
+    ...(await prepareUserFundedSafeCalls({
+      live: input.live,
+      safe: input.safe,
+      signerAddress: input.owner,
+      calls: [{ to: input.safe, value: 0n, data }]
+    })),
+    mode: 'legacy' as const
+  }
 }
 
-/** Session-key-signed UserOp that only calls LuckyDraw.draw(). */
+/** Session-key-signed UserOp that only calls LuckyDraw.draw(). Paid by EntryPoint deposit. Legacy path only. */
 export async function prepareSessionDrawUserOperation(input: {
   readonly live: LiveExecutionConfig
   readonly grant: SessionGrantRecord
   readonly now: number
 }) {
+  if (input.grant.mode === 'roles') {
+    throw new Error('roles-grant-must-use-eoa-draw-path')
+  }
   const decision = evaluateSessionKeyDraw({
     grant: {
       eoa: input.grant.eoa,
@@ -165,57 +233,16 @@ export async function prepareSessionDrawUserOperation(input: {
   })
   if (!decision.allowed) throw new Error(decision.reason)
 
-  const publicClient = createPublicClient({ chain: monadTestnet, transport: http(input.live.rpcUrl) })
-  const account = await toSafeSmartAccount({
-    client: publicClient,
-    address: input.grant.safe as Address,
-    owners: [signerPlaceholder(input.grant.sessionAddress as Address)],
-    version: '1.4.1',
-    entryPoint: { address: MONAD_ACTIVATION_CONFIG.entryPoint as Address, version: '0.7' },
-    safe4337ModuleAddress: input.live.safe4337Module,
-    safeModuleSetupAddress: MONAD_ACTIVATION_CONFIG.safeModuleSetup as Address,
-    safeProxyFactoryAddress: MONAD_ACTIVATION_CONFIG.safeFactory as Address,
-    safeSingletonAddress: MONAD_ACTIVATION_CONFIG.safeSingleton as Address,
-    saltNonce: 0n,
-    useMultiSendForSetup: false
+  return prepareUserFundedSafeCalls({
+    live: input.live,
+    safe: input.grant.safe as Address,
+    signerAddress: input.grant.sessionAddress as Address,
+    calls: [{
+      to: MONAD_ACTIVATION_CONFIG.luckyDraw as Address,
+      value: 0n,
+      data: encodeLuckyDrawCallData()
+    }]
   })
-  // The private bundler URL is used only for gas estimation/submission. There is no Paymaster request.
-  const bundler = createBundlerClient({ transport: http(input.live.createBundlerUrl()), chain: monadTestnet })
-  const pimlico = createPimlicoClient({
-    transport: http(input.live.createBundlerUrl()),
-    entryPoint: { address: entryPoint07Address, version: '0.7' }
-  })
-  const gasPrice = await pimlico.getUserOperationGasPrice()
-  const draft = {
-    sender: account.address,
-    nonce: await account.getNonce(),
-    callData: await account.encodeCalls([{ to: MONAD_ACTIVATION_CONFIG.luckyDraw as Address, value: 0n, data: encodeLuckyDrawCallData() }]),
-    maxFeePerGas: gasPrice.fast.maxFeePerGas,
-    maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
-    signature: await account.getStubSignature()
-  }
-  const estimate = await bundler.estimateUserOperationGas({ entryPointAddress: entryPoint07Address, ...draft })
-  const userOperation = serializeUserOperationForClient({
-    sender: account.address,
-    nonce: toHexQuantity(draft.nonce),
-    callData: draft.callData,
-    callGasLimit: toHexQuantity(estimate.callGasLimit),
-    verificationGasLimit: toHexQuantity(estimate.verificationGasLimit),
-    preVerificationGas: toHexQuantity(estimate.preVerificationGas),
-    maxFeePerGas: toHexQuantity(draft.maxFeePerGas),
-    maxPriorityFeePerGas: toHexQuantity(draft.maxPriorityFeePerGas),
-    signature: '0x' as const
-  })
-  const gasBudget = BigInt(userOperation.callGasLimit) + BigInt(userOperation.verificationGasLimit) + BigInt(userOperation.preVerificationGas)
-  if (gasBudget > input.live.maxGas) throw new Error(`user-funded user operation exceeds configured max gas (needed ${gasBudget.toString()}, max ${input.live.maxGas.toString()})`)
-  const deposit = await publicClient.readContract({
-    address: MONAD_ACTIVATION_CONFIG.entryPoint as Address,
-    abi: entryPointDepositAbi,
-    functionName: 'balanceOf',
-    args: [account.address]
-  })
-  assertSufficientEntryPointDeposit({ deposit, userOperation })
-  return { userOperation, entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint }
 }
 
 export function assertSessionDrawSubmitBody(body: Record<string, unknown> | null | undefined): { preparationId: string; signature: string } {
@@ -261,6 +288,13 @@ export async function submitSessionUserOperation(input: {
     preVerificationGas: BigInt(String(raw.preVerificationGas)),
     maxFeePerGas: BigInt(String(raw.maxFeePerGas)),
     maxPriorityFeePerGas: BigInt(String(raw.maxPriorityFeePerGas)),
+    // Paymaster fields only when present (sponsored activation-era ops). Session enable/draw are user-funded.
+    ...(typeof raw.paymaster === 'string' ? {
+      paymaster: raw.paymaster as Address,
+      paymasterVerificationGasLimit: BigInt(String(raw.paymasterVerificationGasLimit ?? '0x0')),
+      paymasterPostOpGasLimit: BigInt(String(raw.paymasterPostOpGasLimit ?? '0x0')),
+      paymasterData: (raw.paymasterData as Hex) ?? '0x'
+    } : {}),
     signature: raw.signature as Hex
   }
   const userOpHash = await bundler.sendUserOperation({

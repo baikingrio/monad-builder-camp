@@ -16,7 +16,8 @@
 - The browser must never receive Pimlico credentials, server session secrets, or any private key.
 - User-funded draw UserOperations must have no `paymaster`, `paymasterData`, or Paymaster gas fields.
 - Do not change `SESSION_KEY_MAX_CALLS`, TTL, target, selector, value, or current owner-based Session Key model in this phase.
-- The existing Sponsor path stays limited to activation and Session Key enablement.
+- Do not change `SESSION_KEY_MAX_CALLS` (legacy remains 3), TTL, target, selector, value, or current owner-based Session Key model until Safe7579 has an on-chain policy receipt.
+- Session Key enablement and Session draws are user-funded via `EntryPoint.depositTo(safe)`.
 - No actual testnet transaction, funding, or contract change is made without a separate explicit user authorization.
 
 ## Task 1: Create a pure EntryPoint deposit utility

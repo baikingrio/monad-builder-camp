@@ -1,0 +1,39 @@
+{
+  "chainId": 10143,
+  "deployer": "0x7c0343c808B827e4286381c2292d92c3f19152a4",
+  "factory": "0xce0042b868300000d44a59004da54a005ffdcf9f",
+  "deployedAt": "2026-07-24T03:43:51.028Z",
+  "results": [
+    {
+      "name": "Integrity",
+      "address": "0x6a6Af4b16458Bc39817e4019fB02BD3b26d41049",
+      "noop": false,
+      "txHash": "0xeb6b15380c571ff461647fe532d3e9b4652a6825ae64dd2de7c80d82830f1bd5"
+    },
+    {
+      "name": "Packer",
+      "address": "0x61C5B1bE435391fDd7BC6703F3740C0d11728a8C",
+      "noop": false,
+      "txHash": "0xfe92c6864d4586768dfc174bb463b78e40ea826f98edf16eda641482409c170c"
+    },
+    {
+      "name": "Roles",
+      "address": "0x9646fDAD06d3e24444381f44362a3B0eB343D337",
+      "noop": false,
+      "txHash": "0x471021d1dbb3895769c82fb58dd0f56752ed58640acdf876cea40f6b31b37ca3"
+    },
+    {
+      "name": "ModuleProxyFactory",
+      "address": "0x000000000000aDdB49795b0f9bA5BC298cDda236",
+      "noop": false,
+      "txHash": "0x945daf82a6a3e2b9dc3c0371f1e82b948e473e6c2fe387a03cc3d5900e43afb7"
+    }
+  ],
+  "addresses": {
+    "rolesMasterCopy": "0x9646fDAD06d3e24444381f44362a3B0eB343D337",
+    "moduleProxyFactory": "0x000000000000aDdB49795b0f9bA5BC298cDda236",
+    "integrity": "0x6a6Af4b16458Bc39817e4019fB02BD3b26d41049",
+    "packer": "0x61C5B1bE435391fDd7BC6703F3740C0d11728a8C",
+    "erc2470Factory": "0xce0042b868300000d44a59004da54a005ffdcf9f"
+  }
+}

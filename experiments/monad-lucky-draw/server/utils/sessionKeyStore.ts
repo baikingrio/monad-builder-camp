@@ -6,6 +6,8 @@ export function upsertPendingSessionGrant(input: {
   safe: string
   sessionAddress: string
   now: number
+  mode?: 'legacy' | 'roles'
+  rolesModifier?: string
 }): SessionGrantRecord {
   const draft = createSessionKeyGrantDraft(input)
   return persistentStore.upsertPendingSessionGrant({
@@ -14,7 +16,9 @@ export function upsertPendingSessionGrant(input: {
     sessionAddress: draft.sessionAddress,
     expiresAt: draft.expiresAt,
     remainingCalls: draft.remainingCalls,
-    now: input.now
+    now: input.now,
+    mode: input.mode,
+    rolesModifier: input.rolesModifier
   })
 }
 

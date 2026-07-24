@@ -8,8 +8,11 @@
     "build": "nuxi build",
     "validate:dependency-pins": "node scripts/validate-dependency-pins.mjs",
     "validate:safe7579-manifest": "node scripts/validate-safe7579-manifest.mjs",
+    "deploy:roles-stack": "node scripts/deploy-roles-stack.mjs",
+    "prove:roles-session": "node scripts/prove-roles-session.mjs",
+    "validate:roles-manifest": "node scripts/validate-roles-manifest.mjs",
     "preflight:safe7579": "node scripts/generate-safe7579-preflight.mjs",
-    "test": "npm run validate:dependency-pins && npm run validate:safe7579-manifest && vitest run --config vitest.config.ts",
+    "test": "npm run validate:dependency-pins && npm run validate:safe7579-manifest && npm run validate:roles-manifest && vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {

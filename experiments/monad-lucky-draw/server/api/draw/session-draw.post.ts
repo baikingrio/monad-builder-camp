@@ -38,6 +38,10 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 409)
     return { ok: false, reason: 'session-grant-unavailable' }
   }
+  if (grant.mode === 'roles') {
+    setResponseStatus(event, 409)
+    return { ok: false, reason: 'roles-grant-must-use-session-draw-prepare' }
+  }
 
   try {
     const prepared = await prepareSessionDrawUserOperation({ live, grant, now })
@@ -48,6 +52,7 @@ export default defineEventHandler(async (event) => {
     persistentStore.recordAudit({ event: 'session-draw-prepared', eoa: session.eoa, now, outcome: 'accepted' })
     return {
       ok: true,
+      mode: 'legacy',
       sessionAddress: grant.sessionAddress as Address,
       remainingCalls: grant.remainingCalls,
       expiresAt: preparation.expiresAt,

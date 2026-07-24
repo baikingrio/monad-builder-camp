@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { DemoState } from '../lib/demoState'
 import type { ActivationReadiness } from '../lib/activationReadiness'
+import type { RolesSessionMode } from '../lib/rolesReadiness'
 
 export type DrawOutcome =
   | { kind: 'idle' }
@@ -21,11 +22,15 @@ const props = withDefaults(defineProps<{
   sessionEnabled?: boolean
   entryPointDeposit?: string
   sessionFundingSufficient?: boolean
+  sessionMode?: RolesSessionMode
+  sessionBlockers?: readonly string[]
 }>(), {
   sponsorEnabled: false,
   sessionEnabled: false,
   entryPointDeposit: '0',
   sessionFundingSufficient: false,
+  sessionMode: 'legacy-owner-session',
+  sessionBlockers: () => [],
   outcome: () => ({ kind: 'idle' })
 })
 
@@ -55,11 +60,13 @@ const canEnableSession = computed(() =>
   props.sponsorEnabled
   && activationDone.value
   && !props.sessionEnabled
+  && props.sessionFundingSufficient
   && props.outcome.kind !== 'pending'
 )
 
 const canSessionDraw = computed(() =>
   props.sessionEnabled
+  && props.sessionFundingSufficient
   && props.outcome.kind !== 'pending'
 )
 </script>
@@ -85,9 +92,22 @@ const canSessionDraw = computed(() =>
 
     <div class="divider" aria-hidden="true"></div>
     <h3>后续抽奖</h3>
+    <p class="mode-badge" role="status" :data-mode="props.sessionMode">
+      Session 模式：
+      <strong v-if="props.sessionMode === 'legacy-owner-session'">legacy-owner-session（服务端策略 + 3 次上限）</strong>
+      <strong v-else>zodiac-roles-session（Roles member，自付 gas，无次数上限）</strong>
+    </p>
+    <p v-if="props.sessionMode === 'legacy-owner-session' && props.sessionBlockers.length" class="help" id="session-mode-blockers">
+      Zodiac Roles 尚未启用（Safe7579 产品路径已归档）。阻断项：{{ props.sessionBlockers.join(', ') }}。
+    </p>
     <p class="description">
-      启用免弹窗会生成浏览器 Session Key，并需<strong>一次</strong> Owner 钱包授权将其加入 Safe。
-      后续抽奖由 Session Key 本地签名，并从 Safe 的 EntryPoint 充值支付 Gas，不再弹窗。服务端仍只允许固定 <code>draw()</code>，且有 3 次与过期限制。
+      当前为 <strong v-if="props.sessionMode === 'zodiac-roles-session'">Roles</strong><strong v-else>legacy</strong> 路径。
+      <template v-if="props.sessionMode === 'zodiac-roles-session'">
+        启用时 Owner 一次授权安装 Roles（Session Key 为 member，非 owner），并向 Session Key tip 约 0.1 MON；抽奖为 Session Key EOA 调用 <code>execTransactionWithRole(draw)</code>。自付 gas，<strong>无次数上限</strong>；仍保留 24h TTL。启用前请确保 Safe 有足够原生 MON（tip）。
+      </template>
+      <template v-else>
+        启用时 Owner 一次授权将 Session Key <code>addOwnerWithThreshold</code>；启用与抽奖 Gas 由 EntryPoint Deposit 支付。服务端仍只允许固定 <code>draw()</code>，并保留 <strong>3 次</strong>与 24h TTL。
+      </template>
     </p>
     <button
       type="button"
@@ -103,7 +123,12 @@ const canSessionDraw = computed(() =>
       @click="emit('session-draw')"
     >免弹窗抽奖</button>
     <p id="session-help" class="help">
-      EntryPoint Deposit：{{ props.entryPointDeposit }} wei MON。Deposit 已检测到；最终余额是否足够由服务端准备时确认。充值仅能进入当前 Safe 的 EntryPoint deposit。Session Key 在链上是 Safe owner（threshold=1），密码学上权限较宽；仅测试网，Demo 依赖短有效期、3 次限制与服务端拒签非 draw 调用。
+      <template v-if="props.sessionMode === 'zodiac-roles-session'">
+        Roles 启用 Gas 由 EntryPoint Deposit 支付；抽奖 Gas 由 Session Key 原生 MON tip 支付。Deposit：{{ props.entryPointDeposit }} wei。Session Key 是 Roles member（非 Safe owner），链上仅允许 <code>LuckyDraw.draw()</code>。自付 gas，无次数上限；仍保留 24h TTL。
+      </template>
+      <template v-else>
+        EntryPoint Deposit：{{ props.entryPointDeposit }} wei MON。Session Key 在链上是 Safe owner（threshold=1），密码学上权限较宽；仅测试网。legacy Demo 依赖短有效期、<strong>3 次</strong>限制与服务端拒签非 draw 调用。
+      </template>
     </p>
 
     <p v-if="props.outcome.kind === 'idle'" class="result" role="status">暂无抽奖结果。</p>
@@ -119,11 +144,12 @@ const canSessionDraw = computed(() =>
       <a v-if="props.outcome.txUrl" :href="props.outcome.txUrl" target="_blank" rel="noopener noreferrer">在 MonadVision 查看交易</a>
     </div>
     <div v-else-if="props.outcome.kind === 'session-ready'" class="result success" role="status">
-      <p>免弹窗已启用。剩余次数：{{ props.outcome.remainingCalls }}。</p>
+      <p>免弹窗已启用（legacy）。剩余次数：{{ props.outcome.remainingCalls }}。</p>
       <p>Session：<code>{{ props.outcome.sessionAddress }}</code></p>
+      <p>过期时间：{{ new Date(props.outcome.expiresAt).toLocaleString() }}</p>
     </div>
     <div v-else-if="props.outcome.kind === 'session-draw-success'" class="result success" role="status">
-      <p>免弹窗抽卡已确认。剩余次数：{{ props.outcome.remainingCalls }}。</p>
+      <p>免弹窗抽卡已确认（legacy）。剩余次数：{{ props.outcome.remainingCalls }}。</p>
       <p>UserOperation：<code>{{ props.outcome.userOpHash }}</code></p>
       <a v-if="props.outcome.txUrl" :href="props.outcome.txUrl" target="_blank" rel="noopener noreferrer">在 MonadVision 查看交易</a>
     </div>
@@ -132,5 +158,5 @@ const canSessionDraw = computed(() =>
 </template>
 
 <style scoped>
-.panel { padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 0.05); }.eyebrow{color:#6d28d9;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}h2{margin:.35rem 0 .5rem;font-size:1.2rem;color:#111827}h3{margin:0 0 .4rem;color:#1f2937;font-size:1rem}.description,.help{color:#4b5563;line-height:1.6}button{width:100%;margin-top:.55rem;padding:.75rem 1rem;border:0;border-radius:.65rem;font:inherit;font-weight:700}button:disabled{cursor:not-allowed;background:#e5e7eb;color:#6b7280}.activate:not(:disabled){cursor:pointer;background:#6d28d9;color:#fff}.help{margin:.6rem 0 0;font-size:.88rem}.divider{height:1px;margin:1.35rem 0;background:#e5e7eb}.result{margin:1.1rem 0 0;padding:.75rem;border-radius:.65rem;background:#f9fafb;color:#374151;font-size:.9rem;line-height:1.55}.result.pending{background:#eff6ff;color:#1e3a8a}.result.success{background:#ecfdf5;color:#065f46}.result.success a{color:#047857;font-weight:700}.result.error{background:#fef2f2;color:#991b1b}code{overflow-wrap:anywhere}
+.panel { padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 0.05); }.eyebrow{color:#6d28d9;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}h2{margin:.35rem 0 .5rem;font-size:1.2rem;color:#111827}h3{margin:0 0 .4rem;color:#1f2937;font-size:1rem}.description,.help{color:#4b5563;line-height:1.6}button{width:100%;margin-top:.55rem;padding:.75rem 1rem;border:0;border-radius:.65rem;font:inherit;font-weight:700}button:disabled{cursor:not-allowed;background:#e5e7eb;color:#6b7280}.activate:not(:disabled){cursor:pointer;background:#6d28d9;color:#fff}.help{margin:.6rem 0 0;font-size:.88rem}.divider{height:1px;margin:1.35rem 0;background:#e5e7eb}.mode-badge{margin:0 0 .75rem;padding:.55rem .75rem;border-radius:.55rem;background:#f5f3ff;color:#4c1d95;font-size:.88rem;line-height:1.45}.mode-badge[data-mode="zodiac-roles-session"]{background:#ecfdf5;color:#065f46}.result{margin:1.1rem 0 0;padding:.75rem;border-radius:.65rem;background:#f9fafb;color:#374151;font-size:.9rem;line-height:1.55}.result.pending{background:#eff6ff;color:#1e3a8a}.result.success{background:#ecfdf5;color:#065f46}.result.success a{color:#047857;font-weight:700}.result.error{background:#fef2f2;color:#991b1b}code{overflow-wrap:anywhere}
 </style>

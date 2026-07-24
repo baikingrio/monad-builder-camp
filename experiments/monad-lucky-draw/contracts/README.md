@@ -22,3 +22,12 @@ forge script script/DeployMonadLuckyDraw.s.sol:DeployMonadLuckyDraw --rpc-url ht
 ```
 
 未经用户明确批准，绝不添加或使用 `--broadcast`。本仓库尚未执行部署或广播。
+
+## Zodiac Roles（下一产品路径，fail-closed）
+
+- Manifest：`vendor-manifest.roles.json`（`deployment.permitted=false`）
+- 脚本：`script/VerifyRolesStack.s.sol`、`script/DeployRolesStack.s.sol`（默认禁止广播）
+- 本地 harness：`test/DrawOnlyRolesHarness.t.sol`（**不是**上游 Roles bytecode）
+- 产品门闩与 runbook：见 `../docs/zodiac-roles-migration-runbook.md`
+
+Safe7579 相关脚本与 Policy **已归档**，不再作为产品下一跳。

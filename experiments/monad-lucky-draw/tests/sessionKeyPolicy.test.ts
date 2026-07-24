@@ -3,6 +3,7 @@ import {
   createSessionKeyGrantDraft,
   evaluateSessionKeyDraw,
   SESSION_KEY_MAX_CALLS,
+  SESSION_KEY_UNLIMITED_CALLS,
   type SessionKeyGrant
 } from '../app/lib/sessionKeyPolicy'
 import { MONAD_ACTIVATION_CONFIG } from '../app/lib/monadConfig'
@@ -27,6 +28,28 @@ describe('session key draw policy', () => {
       selector: LUCKY_DRAW_DRAW_SELECTOR,
       value: 0n,
       now: NOW
+    })).toEqual({ allowed: true })
+  })
+
+  it('keeps the legacy three-call cap for owner-based sessions', () => {
+    expect(SESSION_KEY_MAX_CALLS).toBe(3)
+    expect(evaluateSessionKeyDraw({
+      grant: grant({ remainingCalls: 0 }),
+      target: MONAD_ACTIVATION_CONFIG.luckyDraw,
+      selector: LUCKY_DRAW_DRAW_SELECTOR,
+      value: 0n,
+      now: NOW
+    })).toEqual({ allowed: false, reason: 'session-exhausted' })
+  })
+
+  it('skips the call cap when unlimitedCalls is set (Roles self-paid)', () => {
+    expect(evaluateSessionKeyDraw({
+      grant: grant({ remainingCalls: 0 }),
+      target: MONAD_ACTIVATION_CONFIG.luckyDraw,
+      selector: LUCKY_DRAW_DRAW_SELECTOR,
+      value: 0n,
+      now: NOW,
+      unlimitedCalls: true
     })).toEqual({ allowed: true })
   })
 
@@ -57,6 +80,18 @@ describe('session key draw policy', () => {
       now: NOW
     })
     expect(draft.onchainAuthorized).toBe(false)
+    expect(draft.remainingCalls).toBe(3)
     expect(JSON.stringify(draft)).not.toMatch(/pimlico|apikey|private|secret/i)
+  })
+
+  it('uses an unlimited call sentinel for Roles-mode grant drafts', () => {
+    const draft = createSessionKeyGrantDraft({
+      eoa: grant().eoa,
+      safe: grant().safe,
+      sessionAddress: grant().sessionAddress,
+      now: NOW,
+      mode: 'roles'
+    })
+    expect(draft.remainingCalls).toBe(SESSION_KEY_UNLIMITED_CALLS)
   })
 })

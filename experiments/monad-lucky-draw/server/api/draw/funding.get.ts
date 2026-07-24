@@ -1,6 +1,10 @@
 import { deriveMonadCounterfactualSafe } from '../../../app/lib/safeAddress'
 import { MONAD_ACTIVATION_CONFIG } from '../../../app/lib/monadConfig'
-import { createEntryPointBalanceReader, getUserFundingStatus } from '../../utils/userFundedExecution'
+import {
+  createEntryPointBalanceReader,
+  createNativeBalanceReader,
+  getUserFundingStatus
+} from '../../utils/userFundedExecution'
 import { persistentStore } from '../../utils/sqliteStore'
 
 export default defineEventHandler(async (event) => {
@@ -12,9 +16,18 @@ export default defineEventHandler(async (event) => {
     return { ok: false, reason: 'unauthenticated-session' }
   }
 
+  const config = useRuntimeConfig()
+  const rpcUrl = String(config.public.monadRpcUrl || 'https://testnet-rpc.monad.xyz')
   const safe = deriveMonadCounterfactualSafe({ owner: session.eoa, config: MONAD_ACTIVATION_CONFIG, saltNonce: 0n }).address
   try {
-    return { ok: true, ...(await getUserFundingStatus({ safe, readBalance: createEntryPointBalanceReader() })) }
+    return {
+      ok: true,
+      ...(await getUserFundingStatus({
+        safe,
+        readBalance: createEntryPointBalanceReader(),
+        readNativeBalance: createNativeBalanceReader(rpcUrl)
+      }))
+    }
   } catch {
     setResponseStatus(event, 502)
     return { ok: false, reason: 'entrypoint-deposit-unavailable' }

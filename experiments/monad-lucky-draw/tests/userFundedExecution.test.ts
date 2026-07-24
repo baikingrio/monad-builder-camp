@@ -12,10 +12,19 @@ describe('user-funded execution status', () => {
         expect(entryPoint).toBe(MONAD_ACTIVATION_CONFIG.entryPoint)
         expect(safe).toBe(SAFE)
         return 42000000000000000n
+      },
+      readNativeBalance: async (safe) => {
+        expect(safe).toBe(SAFE)
+        return 100000000000000000n
       }
     })
 
-    expect(result).toEqual({ entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint, safe: SAFE, deposit: '42000000000000000' })
+    expect(result).toEqual({
+      entryPoint: MONAD_ACTIVATION_CONFIG.entryPoint,
+      safe: SAFE,
+      deposit: '42000000000000000',
+      nativeBalance: '100000000000000000'
+    })
     expect(JSON.stringify(result)).not.toMatch(/pimlico|apikey|private|secret|https?:/i)
   })
 
