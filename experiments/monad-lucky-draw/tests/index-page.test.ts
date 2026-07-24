@@ -57,6 +57,7 @@ describe('Monad Lucky Draw 首页', () => {
     renderPage()
 
     expect(screen.getByText(/测试代币请使用 Monad 官方水龙头/)).toBeTruthy()
-    expect(screen.getByText(/本应用不提供水龙头、不保管私钥、不发送测试币/)).toBeTruthy()
+    expect(screen.getByText(/本应用不提供水龙头、不保管私钥/)).toBeTruthy()
+    expect(screen.getByText(/转入当前 Safe（原生）或 EntryPoint Deposit/)).toBeTruthy()
   })
 })
